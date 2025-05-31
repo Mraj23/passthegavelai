@@ -26,6 +26,9 @@ pip freeze > requirements.txt
 
 # Install git hook scripts
 pre-commit install
+
+# Run pre-commit
+pre-commit run -a
 ```
 
 ## Manual Run
