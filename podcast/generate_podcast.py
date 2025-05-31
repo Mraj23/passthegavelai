@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 from pydub import AudioSegment
 import requests
+import datetime
 
 
 class SimplePodcastGenerator:
@@ -200,6 +201,26 @@ class SimplePodcastGenerator:
             print("Error: No audio segments generated!")
             return None
 
+
+def generate_podcast_from_data():
+    input_file = "data/transcript.json"
+    today = datetime.now().strftime("%Y-%m-%d")
+    output_file = f"data/podcast_{today}.mp3"
+
+    api_key = os.getenv('ELEVENLABS_API_KEY')
+    if not api_key:
+        print("⚠️  No ELEVENLABS_API_KEY found in config.")
+        raise EnvironmentError("ELEVENLABS_API_KEY is required.")
+
+    pause_ms = 800
+    generator = SimplePodcastGenerator(api_key, pause_duration=pause_ms)
+    result = generator.generate_podcast(input_file, output_file)
+
+    if result:
+        print(f"\n🎉 Success! Your podcast is ready: {result}")
+    else:
+        print("\n❌ Failed to generate podcast")
+    return output_file
 
 def main():
     """Main function with command line interface"""
