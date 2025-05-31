@@ -31,6 +31,8 @@ METADATA_DIR = os.path.join(DOWNLOAD_FOLDER, "ptg_discord_data.json")
 # Main running
 PROMPT_FILE = os.path.join("transcript/prompt.txt")
 
+ROOT_DATA_DIR = os.path.join("../data")
+SNIPPETS_DIR = os.path.join(ROOT_DATA_DIR, "snippets")
 # Ensure combined directory exists
 os.makedirs(COMBINED_DIR, exist_ok=True)
 
@@ -117,15 +119,12 @@ async def generate_script():
     transcripts = {}
     for audio_file in audio_files:
         audio_path = os.path.join(COMBINED_DIR, audio_file)
-        snippets = await extractor.process_audio_file(
-            audio_path, os.path.join(ROOT_DATA_DIR, "snippets")
-        )
-        print(snippets)
+        snippets = await extractor.process_audio_file(audio_path, SNIPPETS_DIR)
 
         transcript = transcribe_audio(audio_path)
         transcripts[audio_file] = transcript
 
-    snippets_tree = get_directory_tree("./snippet")
+    snippets_tree = get_directory_tree(SNIPPETS_DIR)
 
     system_prompt = get_system_prompt()
     client = AsyncOpenAI(
@@ -154,8 +153,8 @@ async def generate_script():
         ) as f:
             json.dump(script_json, f, indent=2, ensure_ascii=False)
 
-        print(json.dumps(json.loads(script_json), indent=2, ensure_ascii=False))
-
+            
+        
     except (json.JSONDecodeError, ValidationError) as e:
         print(
             f"Failed to parse model output as valid JSON: {str(e)}\nRaw output: {content}"

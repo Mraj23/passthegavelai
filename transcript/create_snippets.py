@@ -136,8 +136,7 @@ Return ONLY a JSON array like this. Do NOT include backticks (`):
 
         # Create a subfolder for this audio file
         audio_base = os.path.splitext(os.path.basename(audio_file))[0]
-        audio_output_folder = os.path.join(output_folder, audio_base)
-        os.makedirs(audio_output_folder, exist_ok=True)
+        os.makedirs(output_folder, exist_ok=True)
 
         # Load the audio file
         audio = AudioSegment.from_file(audio_file)
@@ -153,8 +152,8 @@ Return ONLY a JSON array like this. Do NOT include backticks (`):
 
             # Sanitize reason for filename
             reason_safe = self.sanitize_filename(part["reason"])
-            filename = f"{i+1}_{reason_safe}.mp3"
-            filepath = os.path.join(audio_output_folder, filename)
+            filename = f"{audio_base}_{reason_safe}.mp3"
+            filepath = os.path.join(output_folder, filename)
             snippet.export(filepath, format="mp3")
 
             snippets.append(
@@ -198,7 +197,6 @@ Return ONLY a JSON array like this. Do NOT include backticks (`):
 
         # Save metadata
         audio_base = os.path.splitext(os.path.basename(audio_file))[0]
-        audio_output_folder = os.path.join(output_folder, audio_base)
         metadata = {
             "source_file": audio_file,
             "full_transcript": transcript["full_text"],
@@ -211,7 +209,7 @@ Return ONLY a JSON array like this. Do NOT include backticks (`):
         # print(f"💾 Saved metadata to: {metadata_file}")
 
         print(
-            f"🎉 Done! Generated {len(snippets)} snippets in '{audio_output_folder}' folder"
+            f"🎉 Done! Generated {len(snippets)} snippets in '{output_folder}' folder"
         )
 
         return snippets
