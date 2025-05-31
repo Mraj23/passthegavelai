@@ -2,30 +2,12 @@ import discord
 import aiohttp
 import os
 import json
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import asyncio
-
-# Map of discord usernames to prettier names
-USERNAME_MAP = {
-    "lennyhuang": "Len",
-    "Raj": "Raj",
-    "Phi": "Phi",
-    # Add more mappings as needed
-}
-
-def load_env_vars():
-    load_dotenv()
-    return {
-        "DISCORD_TOKEN": os.getenv("DISCORD_TOKEN"),
-        "DOWNLOAD_FOLDER": os.getenv("DOWNLOAD_FOLDER"),
-        "SERVER_ID": int(os.getenv("SERVER_ID")),
-        "UPLOAD_CHANNEL_ID": int(os.getenv("UPLOAD_CHANNEL_ID")),
-    }
+from config import config
 
 def create_folders():
-    env = load_env_vars()
-    data_folder = env["DOWNLOAD_FOLDER"]
+    data_folder = config.DOWNLOAD_FOLDER
     voice_folder = os.path.join(data_folder, "voice_messages")
     voice_metadata_file = os.path.join(data_folder, "ptg_discord_data.json")
     if not os.path.exists(data_folder):
@@ -67,7 +49,6 @@ async def process_discord_messages_and_shutdown(client):
     This is the core task that the bot will perform once it's ready.
     It fetches messages, downloads audio, saves data, and then shuts down the client.
     """
-    env = load_env_vars() # Load env vars again, or pass them in from main
     voice_folder, voice_metadata_file = create_folders() # Ensure folders exist
 
     print("Starting message processing task...")
@@ -75,9 +56,9 @@ async def process_discord_messages_and_shutdown(client):
     # Create aiohttp session within this task's scope for clean closure
     async with aiohttp.ClientSession() as session:
         try:
-            channel = client.get_channel(env["UPLOAD_CHANNEL_ID"])
+            channel = client.get_channel(config.UPLOAD_CHANNEL_ID)
             if not channel:
-                print(f"Could not find channel with ID {env['UPLOAD_CHANNEL_ID']}")
+                print(f"Could not find channel with ID {config.UPLOAD_CHANNEL_ID}")
                 # If channel not found, still close gracefully
                 await client.close()
                 client.loop.stop()
@@ -92,16 +73,15 @@ async def process_discord_messages_and_shutdown(client):
                     continue
 
                 author_name = message.author.name
-                prettier_name = USERNAME_MAP.get(author_name, author_name)
 
                 for attachment in message.attachments:
                     if attachment.content_type and "audio" in attachment.content_type:
                         print(f"Voice message found: {attachment.filename} from {author_name}")
                         filename = await download_voice_attachment(attachment, session, voice_folder)
                         if filename:
-                            if prettier_name not in user_audio_map:
-                                user_audio_map[prettier_name] = []
-                            user_audio_map[prettier_name].append(filename)
+                            if author_name not in user_audio_map:
+                                user_audio_map[author_name] = []
+                            user_audio_map[author_name].append(filename)
 
             output_list = []
             for name, files in user_audio_map.items():
@@ -127,7 +107,6 @@ async def process_discord_messages_and_shutdown(client):
 
 # No longer an async function
 def get_messages():
-    env = load_env_vars()
     create_folders() # Create folders once at the start
 
     client = get_discord_client()
@@ -144,7 +123,7 @@ def get_messages():
     try:
         # client.run() is a blocking call that starts and manages the event loop.
         # It will exit when client.loop.stop() is called from within on_ready.
-        client.run(env["DISCORD_TOKEN"])
+        client.run(config.DISCORD_TOKEN)
         print("Discord client run loop has stopped.")
         # At this point, the task has completed and the client has closed.
         return True

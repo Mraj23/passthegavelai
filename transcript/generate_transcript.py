@@ -2,7 +2,6 @@ import os
 import json
 from typing import List, Dict
 from pydantic import BaseModel, ValidationError
-from dotenv import load_dotenv
 from openai import AsyncOpenAI
 import whisper
 import tempfile
@@ -10,10 +9,8 @@ import sys
 import asyncio
 from pydub import AudioSegment
 from create_snippets import AudioSnippetExtractor
+from config import config
 
-load_dotenv()
-
-DOWNLOAD_FOLDER = os.getenv("DOWNLOAD_FOLDER")
 AUDIO_DIR = "audio"
 COMBINED_DIR = os.path.join(AUDIO_DIR, "combined")
 
@@ -30,7 +27,7 @@ class GenerateResponse(BaseModel):
 class Metadata(BaseModel):
     name: str
     audio_files: List[str]
-    
+
 def get_system_prompt() -> str:
     try:
         with open("prompt.txt", "r", encoding="utf-8") as f:
@@ -77,21 +74,23 @@ async def generate_script():
         input_files = [os.path.join(AUDIO_DIR, f) for f in person.audio_files]
         output_file = os.path.join(COMBINED_DIR, f"{person.name.lower()}.wav")
         concat_audio_files(input_files, output_file)
-    
-    if not os.path.isdir(AUDIO_DIR):
-        print(f"Audio directory not found: {AUDIO_DIR}")
+        person.audio_files = [f"{person.name.lower()}_combined.wav"]
+
+    audio_dir = "audio"
+    if not os.path.isdir(audio_dir):
+        print(f"Audio directory not found: {audio_dir}")
         sys.exit(1)
     audio_files = [f for f in os.listdir(COMBINED_DIR) if os.path.isfile(os.path.join(COMBINED_DIR, f))]
     if not audio_files:
         print(f"No audio files found in {COMBINED_DIR}")
         sys.exit(1)
-    
-    
+
+
     transcripts = {}
     for audio_file in audio_files:
-        audio_path = os.path.join(COMBINED_DIR, audio_file) 
+        audio_path = os.path.join(COMBINED_DIR, audio_file)
         snippets = await extractor.process_audio_file(audio_path, "snippet")
-       
+
         transcript = transcribe_audio(audio_path)
         transcripts[audio_file] = transcript
 
@@ -100,8 +99,8 @@ async def generate_script():
         base_url="https://openrouter.ai/api/v1",
         api_key=router_api_key,
     )
-    user_prompt = json.dumps(transcripts)    
-    
+    user_prompt = json.dumps(transcripts)
+
     try:
         response = await client.chat.completions.create(
             model=model,
