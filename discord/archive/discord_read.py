@@ -17,18 +17,22 @@ client = discord.Client(intents=intents)
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
+
 @client.event
 async def on_ready():
-    print(f'We have logged in as {client.user}')
-    channel = client.get_channel(UPLOAD_CHANNEL_ID) # or client.get_channel(int(CHANNEL_ID)) if given as str without int
+    print(f"We have logged in as {client.user}")
+    channel = client.get_channel(
+        UPLOAD_CHANNEL_ID
+    )  # or client.get_channel(int(CHANNEL_ID)) if given as str without int
 
     if channel:
-        async for message in channel.history(limit=10): # Fetch last 10 messages
-            print(f'{message.author}: {message.content}')
+        async for message in channel.history(limit=10):  # Fetch last 10 messages
+            print(f"{message.author}: {message.content}")
             await on_message(message)
     else:
         print(f"Could not find channel with ID {UPLOAD_CHANNEL_ID}")
     await client.close()  # Disconnect after reading messages
+
 
 async def on_message(message):
     if message.author.bot:
@@ -40,6 +44,7 @@ async def on_message(message):
             print(f"Voice message found: {attachment.filename}")
             await download_voice(attachment)
 
+
 async def download_voice(attachment):
     file_path = os.path.join(DOWNLOAD_FOLDER, attachment.filename)
     async with aiohttp.ClientSession() as session:
@@ -48,5 +53,6 @@ async def download_voice(attachment):
                 with open(file_path, "wb") as f:
                     f.write(await resp.read())
                 print(f"Downloaded to {file_path}")
+
 
 client.run(DISCORD_TOKEN)

@@ -1,5 +1,6 @@
 import os
 
+
 def get_directory_tree(root_path: str) -> str:
     """
     Walks the directory at `root_path` and returns a multiline string
