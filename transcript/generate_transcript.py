@@ -7,9 +7,9 @@ import whisper
 import sys
 import asyncio
 from pydub import AudioSegment
-from create_snippets import AudioSnippetExtractor
+from .create_snippets import AudioSnippetExtractor
 from dotenv import load_dotenv
-from get_directory_tree import get_directory_tree
+from .get_directory_tree import get_directory_tree
 
 load_dotenv()
 
