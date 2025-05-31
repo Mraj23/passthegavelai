@@ -11,9 +11,12 @@ from pydub import AudioSegment
 from create_snippets import AudioSnippetExtractor
 from config import config
 
-AUDIO_DIR = "audio"
-COMBINED_DIR = os.path.join(AUDIO_DIR, "combined")
+load_dotenv()
 
+DOWNLOAD_FOLDER = os.path.join('../', os.getenv("DOWNLOAD_FOLDER"))
+AUDIO_DIR =  os.path.join(DOWNLOAD_FOLDER, 'voice_messages')
+COMBINED_DIR = os.path.join(AUDIO_DIR, "combined")
+METADATA_DIR = os.path.join(DOWNLOAD_FOLDER, 'ptg_discord_data.json')
 # Ensure combined directory exists
 os.makedirs(COMBINED_DIR, exist_ok=True)
 
@@ -47,8 +50,8 @@ def transcribe_audio(audio_path: str) -> str:
         return ""
 
 def get_metadata() -> List[Metadata]:
-    with open("./audio/metadata.json", "r", encoding="utf-8") as f:
-        metadata = json.load(f)["metadata"]
+    with open(METADATA_DIR, "r", encoding="utf-8") as f:
+        metadata = json.load(f)
         return [Metadata(**data) for data in metadata]
 
 def concat_audio_files(audio_files: List[str], output_path: str):
@@ -57,6 +60,7 @@ def concat_audio_files(audio_files: List[str], output_path: str):
     for file in audio_files:
         audio = AudioSegment.from_file(file)
         combined += audio
+    print("concat_audio_files", output_path)
     combined.export(output_path, format="wav")
 
 async def generate_script():
