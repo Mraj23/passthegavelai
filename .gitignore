@@ -1,0 +1,10 @@
+# Mac
+.DS_Store
+
+# Audio
+*.m4a
+*.wav
+*.ogg
+
+# Env
+*.env
