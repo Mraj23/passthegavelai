@@ -8,6 +8,7 @@ import os
 import io
 import sys
 import json
+from pathlib import Path
 from pydub import AudioSegment
 import requests
 import datetime
@@ -18,7 +19,6 @@ class SimplePodcastGenerator:
         self.api_key = elevenlabs_api_key
         self.api_url = "https://api.elevenlabs.io/v1"
         self.pause_duration = pause_duration  # milliseconds between speakers
-
         # Default voice IDs (these are ElevenLabs public voices)
         # You can replace these with your own voice IDs
         self.available_voices = [
@@ -69,7 +69,7 @@ class SimplePodcastGenerator:
 
             else:
                 raise ValueError(
-                    f"{i} has 'speaker'+'text' OR 'snippet': {list(segment.keys())}"
+                    f"Segment {i} must have either 'speaker'+'text' OR 'snippet' fields. Got: {list(segment.keys())}"
                 )
 
         return segments
@@ -92,7 +92,9 @@ class SimplePodcastGenerator:
     def text_to_speech(self, text, voice_id):
         """Convert text to speech using ElevenLabs API"""
         if not self.api_key:
-            raise ValueError("Set ELEVENLABS_API_KEY environment variable.")
+            raise ValueError(
+                "ElevenLabs API key is required for text-to-speech generation. Set ELEVENLABS_API_KEY environment variable."
+            )
 
         url = f"{self.api_url}/text-to-speech/{voice_id}"
 
@@ -118,7 +120,7 @@ class SimplePodcastGenerator:
 
         except requests.exceptions.RequestException as e:
             raise RuntimeError(
-                f"Failed to generate for: '{text[:50]}...'. ElevenLabs error: {e}"
+                f"Failed to generate speech for text: '{text[:50]}...'. ElevenLabs API error: {e}"
             )
         except Exception as e:
             raise RuntimeError(
@@ -147,7 +149,7 @@ class SimplePodcastGenerator:
         for i, segment in enumerate(segments, 1):
             if segment.get("type") == "speech":
                 print(
-                    f"[{i}/{len(segments)}]{segment['speaker']}:{segment['text'][:50]}"
+                    f"  [{i}/{len(segments)}] 🗣️  {segment['speaker']}: {segment['text'][:50]}..."
                 )
 
                 # Generate speech
@@ -157,7 +159,9 @@ class SimplePodcastGenerator:
                 audio_segments.append(speech_audio)
 
             elif segment.get("type") == "audio_file":
-                print(f"  [{i}/{len(segments)}]Loading audio file:{segment['snippet']}")
+                print(
+                    f"  [{i}/{len(segments)}] 🎵 Loading audio file: {segment['snippet']}"
+                )
 
                 try:
                     # Load the audio file
@@ -187,7 +191,7 @@ class SimplePodcastGenerator:
             final_podcast.export(output_file, format="mp3", bitrate="192k")
 
             duration = len(final_podcast) / 1000  # Convert to seconds
-            print("✅ Podcast generated successfully!")
+            print(f"✅ Podcast generated successfully!")
             print(f"   Duration: {duration:.1f} seconds ({duration/60:.1f} minutes)")
             print(f"   File: {output_file}")
 
@@ -202,12 +206,12 @@ def generate_podcast_from_data():
     today = datetime.now().strftime("%Y-%m-%d")
     output_file = f"data/podcast_{today}.mp3"
 
-    api_key = os.getenv("ELEVENLABS_API_KEY")
+    api_key = os.getenv('ELEVENLABS_API_KEY')
     if not api_key:
         print("⚠️  No ELEVENLABS_API_KEY found in config.")
         raise EnvironmentError("ELEVENLABS_API_KEY is required.")
 
-    pause_ms = 800
+    pause_ms = 200
     generator = SimplePodcastGenerator(api_key, pause_duration=pause_ms)
     result = generator.generate_podcast(input_file, output_file)
 
@@ -217,33 +221,25 @@ def generate_podcast_from_data():
         print("\n❌ Failed to generate podcast")
     return output_file
 
-
 def main():
-    """Main function with command line interface"""
-    if len(sys.argv) < 2:
-        print("🎙️  Podcast Generator")
-        print("Usage: python podcast_generator.py <json_file> [output_file]")
-        print("\nNo JSON file provided. Creating a sample JSON script...")
-        output_file = "sample_podcast.mp3"
-    else:
-        script_file = sys.argv[1]
-        output_file = sys.argv[2] if len(sys.argv) > 2 else "podcast_output.mp3"
+    input_file = "data/transcript.json"
+    output_file = f"data/podcast_today.mp3"
 
-    # Get ElevenLabs API key from environment variable
-    api_key = os.getenv("ELEVENLABS_API_KEY")
+    api_key = os.getenv('ELEVENLABS_API_KEY')
     if not api_key:
         print("⚠️  No ELEVENLABS_API_KEY environment variable found.")
         raise EnvironmentError("ELEVENLABS_API_KEY environment variable is missing.")
-
+    
     # Create generator and process - you can adjust pause duration here
     pause_ms = 800  # Change this value to adjust pauses (in milliseconds)
     generator = SimplePodcastGenerator(api_key, pause_duration=pause_ms)
-    result = generator.generate_podcast(script_file, output_file)
-
+    result = generator.generate_podcast(input_file, output_file)
+    
     if result:
         print(f"\n🎉 Success! Your podcast is ready: {result}")
     else:
         print("\n❌ Failed to generate podcast")
+    return output_file
 
 
 if __name__ == "__main__":
