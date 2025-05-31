@@ -7,10 +7,10 @@ Converts a text script with Speaker: Text format into an audio podcast
 import os
 import io
 import sys
+import json
 from pathlib import Path
 from pydub import AudioSegment
 import requests
-import json
 
 class SimplePodcastGenerator:
     def __init__(self, elevenlabs_api_key=None, pause_duration=800):
@@ -22,38 +22,52 @@ class SimplePodcastGenerator:
         # You can replace these with your own voice IDs
         self.available_voices = [
             "21m00Tcm4TlvDq8ikWAM",  # Rachel - Female
-            "AZnzlk1XvdvUeBnXmlld",  # Domi - Female  
-            "EXAVITQu4vr4xnSDxMaL",  # Bella - Female
             "ErXwobaYiN019PkySvjV",  # Antoni - Male
-            "MF3mGyEYCl7XYWbV9V6O",  # Elli - Female
             "TxGEqnHWrfWFTfGW9XjX",  # Josh - Male
             "VR6AewLTigWG4xSOukaG",  # Arnold - Male
             "pNInz6obpgDQGcFmaJgB",  # Adam - Male
         ]
         
-    def parse_script(self, script_text):
-        """Parse the simple script format into segments"""
-        segments = []
-        lines = script_text.strip().split('\n')
+    def load_json_script(self, json_file_path):
+        """Load segments from JSON file"""
+        if not os.path.exists(json_file_path):
+            raise FileNotFoundError(f"JSON file not found: {json_file_path}")
         
-        for line_num, line in enumerate(lines, 1):
-            line = line.strip()
-            if not line:
-                continue
+        try:
+            with open(json_file_path, 'r', encoding='utf-8') as f:
+                segments = json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON format in {json_file_path}: {e}")
+        except Exception as e:
+            raise RuntimeError(f"Error reading JSON file {json_file_path}: {e}")
+        
+        if not isinstance(segments, list):
+            raise ValueError("JSON file must contain an array of segments")
+        
+        if not segments:
+            raise ValueError("JSON file contains no segments")
+        
+        print(f"📝 Loaded {len(segments)} segments from JSON")
+        
+        # Validate and categorize segments
+        for i, segment in enumerate(segments):
+            if not isinstance(segment, dict):
+                raise ValueError(f"Segment {i} must be an object, got: {type(segment)}")
+            
+            if 'speaker' in segment and 'text' in segment:
+                if not segment['speaker'].strip():
+                    raise ValueError(f"Segment {i}: Speaker name cannot be empty")
+                if not segment['text'].strip():
+                    raise ValueError(f"Segment {i}: Text cannot be empty")
+                segment['type'] = 'speech'
                 
-            if ':' in line:
-                try:
-                    speaker, text = line.split(':', 1)
-                    segments.append({
-                        'speaker': speaker.strip(),
-                        'text': text.strip(),
-                        'line': line_num
-                    })
-                except Exception as e:
-                    print(f"Warning: Could not parse line {line_num}: {line}")
-                    continue
+            elif 'snippet' in segment:
+                if not segment['snippet'].strip():
+                    raise ValueError(f"Segment {i}: Snippet path cannot be empty")
+                segment['type'] = 'audio_file'
+                
             else:
-                print(f"Warning: Line {line_num} doesn't contain ':' - skipping: {line}")
+                raise ValueError(f"Segment {i} must have either 'speaker'+'text' OR 'snippet' fields. Got: {list(segment.keys())}")
         
         return segments
     
@@ -61,7 +75,7 @@ class SimplePodcastGenerator:
         """Assign voices to speakers"""
         unique_speakers = []
         for seg in segments:
-            if seg['speaker'] not in unique_speakers:
+            if 'speaker' in seg and seg['speaker'] not in unique_speakers:
                 unique_speakers.append(seg['speaker'])
         
         voice_mapping = {}
@@ -75,9 +89,7 @@ class SimplePodcastGenerator:
     def text_to_speech(self, text, voice_id):
         """Convert text to speech using ElevenLabs API"""
         if not self.api_key:
-            print("Warning: No ElevenLabs API key provided. Using mock audio.")
-            # Create a short beep as placeholder
-            return AudioSegment.silent(duration=len(text) * 50)  # Rough estimate
+            raise ValueError("ElevenLabs API key is required for text-to-speech generation. Set ELEVENLABS_API_KEY environment variable.")
         
         url = f"{self.api_url}/text-to-speech/{voice_id}"
         
@@ -89,7 +101,7 @@ class SimplePodcastGenerator:
         
         data = {
             "text": text,
-            "model_id": "eleven_monolingual_v1",
+            "model_id": "eleven_multilingual_v2",
             "voice_settings": {
                 "stability": 0.5,
                 "similarity_boost": 0.5
@@ -105,55 +117,57 @@ class SimplePodcastGenerator:
             return AudioSegment.from_file(audio_data, format="mp3")
             
         except requests.exceptions.RequestException as e:
-            print(f"Error generating speech: {e}")
-            # Return silent audio as fallback
-            return AudioSegment.silent(duration=len(text) * 50)
-    
-    def generate_podcast(self, script_file_path, output_file="podcast_output.mp3"):
-        """Main function to generate podcast from script file"""
-        print(f"🎙️  Generating podcast from: {script_file_path}")
-        
-        # Read script file
-        try:
-            with open(script_file_path, 'r', encoding='utf-8') as f:
-                script_text = f.read()
-        except FileNotFoundError:
-            print(f"Error: Script file '{script_file_path}' not found!")
-            return None
+            raise RuntimeError(f"Failed to generate speech for text: '{text[:50]}...'. ElevenLabs API error: {e}")
         except Exception as e:
-            print(f"Error reading script file: {e}")
-            return None
+            raise RuntimeError(f"Unexpected error during text-to-speech conversion: {e}")
+    
+    def generate_podcast(self, json_file_path, output_file="podcast_output.mp3"):
+        """Main function to generate podcast from JSON file"""
+        print(f"🎙️  Generating podcast from: {json_file_path}")
         
-        # Parse script
-        segments = self.parse_script(script_text)
+        # Load segments from JSON
+        segments = self.load_json_script(json_file_path)
         if not segments:
-            print("Error: No valid segments found in script!")
+            print("Error: No valid segments found in JSON file!")
             return None
         
         print(f"📝 Found {len(segments)} segments")
         
-        # Assign voices
+        # Assign voices to speakers
         voice_mapping = self.assign_voices(segments)
         
         # Generate audio segments
         audio_segments = []
         
-        print("🔊 Generating speech...")
+        print("🔊 Generating podcast...")
         for i, segment in enumerate(segments, 1):
-            print(f"  [{i}/{len(segments)}] {segment['speaker']}: {segment['text'][:50]}...")
+            if segment.get('type') == 'speech':
+                print(f"  [{i}/{len(segments)}] 🗣️  {segment['speaker']}: {segment['text'][:50]}...")
+                
+                # Generate speech
+                speech_audio = self.text_to_speech(
+                    segment['text'], 
+                    voice_mapping[segment['speaker']]
+                )
+                audio_segments.append(speech_audio)
+                
+            elif segment.get('type') == 'audio_file':
+                print(f"  [{i}/{len(segments)}] 🎵 Loading audio file: {segment['snippet']}")
+                
+                try:
+                    # Load the audio file
+                    audio_file = AudioSegment.from_file(segment['snippet'])
+                    audio_segments.append(audio_file)
+                    print(f"    ✅ Added {len(audio_file)/1000:.1f}s audio clip")
+                except Exception as e:
+                    print(f"    ❌ Error loading {segment['snippet']}: {e}")
+                    # Add silence as fallback
+                    audio_segments.append(AudioSegment.silent(duration=2000))
             
-            # Generate speech
-            speech_audio = self.text_to_speech(
-                segment['text'], 
-                voice_mapping[segment['speaker']]
-            )
-            
-            # Add pause after each segment (except the last one)
+            # Add pause between segments (except the last one)
             if i < len(segments):
                 pause = AudioSegment.silent(duration=self.pause_duration)
-                audio_segments.extend([speech_audio, pause])
-            else:
-                audio_segments.append(speech_audio)
+                audio_segments.append(pause)
         
         # Combine all segments
         print("🎵 Combining audio segments...")
@@ -177,29 +191,12 @@ class SimplePodcastGenerator:
             print("Error: No audio segments generated!")
             return None
 
-def create_mock_script():
-    """Create a sample script file for testing"""
-    mock_script = """Host: Welcome to our weekly friend group update! I'm your host, and this week we heard from Sarah, Mike, and Alex about their adventures.
-
-Sarah: Hey everyone! This week was absolutely amazing. I finally visited that new art museum downtown that everyone's been talking about. The contemporary section was incredible, and I spent like three hours just wandering around. I even bought a print for my apartment!
-
-Host: I love that you stuck with it, Alex! There's something so satisfying about mastering a new skill. That's a wrap for this week's updates, everyone. Thanks for sharing your stories - from art museums to mountain peaks to kitchen adventures, you all know how to make life interesting. We'll be back next week with more updates from the group. Until then, keep living those stories worth sharing!"""
-    
-    with open("sample_script.txt", "w", encoding="utf-8") as f:
-        f.write(mock_script)
-    
-    print("📄 Created sample_script.txt")
-    return "sample_script.txt"
-
 def main():
     """Main function with command line interface"""
     if len(sys.argv) < 2:
         print("🎙️  Podcast Generator")
-        print("Usage: python podcast_generator.py <script_file> [output_file]")
-        print("\nNo script file provided. Creating a sample script...")
-        
-        # Create mock script
-        script_file = create_mock_script()
+        print("Usage: python podcast_generator.py <json_file> [output_file]")
+        print("\nNo JSON file provided. Creating a sample JSON script...")        
         output_file = "sample_podcast.mp3"
     else:
         script_file = sys.argv[1]
@@ -209,12 +206,10 @@ def main():
     api_key = os.getenv('ELEVENLABS_API_KEY')
     if not api_key:
         print("⚠️  No ELEVENLABS_API_KEY environment variable found.")
-        print("   The script will run in demo mode with silent audio.")
-        print("   To use real voices, set your API key: export ELEVENLABS_API_KEY='your_key_here'")
-        print()
+        raise EnvironmentError("ELEVENLABS_API_KEY environment variable is missing.")
     
     # Create generator and process - you can adjust pause duration here
-    pause_ms = 5000  # Change this value to adjust pauses (in milliseconds)
+    pause_ms = 800  # Change this value to adjust pauses (in milliseconds)
     generator = SimplePodcastGenerator(api_key, pause_duration=pause_ms)
     result = generator.generate_podcast(script_file, output_file)
     
