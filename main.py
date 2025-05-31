@@ -1,5 +1,5 @@
-from discord.discord_filtered_read import get_messages
-from discord.discord_write_attachment import send_attachment
+from discord_scripts.discord_filtered_read import get_messages
+from discord_scripts.discord_write_attachment import send_attachment
 from transcript.generate_transcript import generate_script_sync
 from podcast.generate_podcast import generate_podcast_from_data
 

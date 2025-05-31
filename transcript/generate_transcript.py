@@ -53,7 +53,7 @@ class Metadata(BaseModel):
 
 def get_system_prompt() -> str:
     try:
-        with open(PROMPT_FILE, "r", encoding="utf-8") as f:
+        with open("transcript/prompt.txt", "r", encoding="utf-8") as f:
             return f.read().strip()
     except FileNotFoundError:
         print("prompt.txt file not found. Please add your system prompt to prompt.txt.")
