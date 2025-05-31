@@ -34,7 +34,7 @@ async def download_voice_attachment(attachment, session, download_folder):
                 return attachment.filename
             else:
                 print(
-                    f"Failed to download {attachment.filename}: HTTP status {resp.status}"
+                    f"Failed to download {attachment.filename}: status {resp.status}"
                 )
     except Exception as e:
         print(f"Error downloading {attachment.filename}: {e}")
@@ -83,7 +83,7 @@ async def process_discord_messages_and_shutdown(client):
                 for attachment in message.attachments:
                     if attachment.content_type and "audio" in attachment.content_type:
                         print(
-                            f"Voice message found: {attachment.filename} from {author_name}"
+                            f"Voice message: {attachment.filename} from {author_name}"
                         )
                         filename = await download_voice_attachment(
                             attachment, session, voice_folder

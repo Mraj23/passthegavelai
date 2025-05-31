@@ -70,7 +70,7 @@ class SimplePodcastGenerator:
 
             else:
                 raise ValueError(
-                    f"Segment {i} must have either 'speaker'+'text' OR 'snippet' fields. Got: {list(segment.keys())}"
+                    f"Segment {i} must have 'speaker'+'text' OR 'snippet' fields: {list(segment.keys())}"
                 )
 
         return segments
@@ -94,7 +94,7 @@ class SimplePodcastGenerator:
         """Convert text to speech using ElevenLabs API"""
         if not self.api_key:
             raise ValueError(
-                "ElevenLabs API key is required for text-to-speech generation. Set ELEVENLABS_API_KEY environment variable."
+                "Set ELEVENLABS_API_KEY environment variable."
             )
 
         url = f"{self.api_url}/text-to-speech/{voice_id}"
@@ -121,7 +121,7 @@ class SimplePodcastGenerator:
 
         except requests.exceptions.RequestException as e:
             raise RuntimeError(
-                f"Failed to generate speech for text: '{text[:50]}...'. ElevenLabs API error: {e}"
+                f"Failed to generate for: '{text[:50]}...'. ElevenLabs error: {e}"
             )
         except Exception as e:
             raise RuntimeError(

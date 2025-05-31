@@ -17,7 +17,7 @@ async def send_message(message: str, filename: str):
                 discord_file = discord.File(file)
                 await channel.send(content=message, file=discord_file)
             print(
-                f"Message and file '{filename}' sent to channel {config.SEND_CHANNEL_ID}"
+                f"Message and file '{filename}' sent to {config.SEND_CHANNEL_ID}"
             )
         except FileNotFoundError:
             print(f"File not found: {filename}")
@@ -47,7 +47,7 @@ def send_attachment(*, message: str, file_path: str):
                     discord_file = discord.File(file)
                     await channel.send(content=message, file=discord_file)
                 print(
-                    f"Message and file '{file_path}' sent to channel {config.SEND_CHANNEL_ID}"
+                    f"Message and file '{file_path}' sent to {config.SEND_CHANNEL_ID}"
                 )
             except FileNotFoundError:
                 print(f"File not found: {file_path}")
