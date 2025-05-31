@@ -33,9 +33,7 @@ async def download_voice_attachment(attachment, session, download_folder):
                     f.write(await resp.read())
                 return attachment.filename
             else:
-                print(
-                    f"Failed to download {attachment.filename}: status {resp.status}"
-                )
+                print(f"Failed to download {attachment.filename}: status {resp.status}")
     except Exception as e:
         print(f"Error downloading {attachment.filename}: {e}")
     return None

@@ -16,9 +16,7 @@ async def send_message(message: str, filename: str):
             with open(filename, "rb") as file:
                 discord_file = discord.File(file)
                 await channel.send(content=message, file=discord_file)
-            print(
-                f"Message and file '{filename}' sent to {config.SEND_CHANNEL_ID}"
-            )
+            print(f"Message and file '{filename}' sent to {config.SEND_CHANNEL_ID}")
         except FileNotFoundError:
             print(f"File not found: {filename}")
         except discord.errors.HTTPException as e:

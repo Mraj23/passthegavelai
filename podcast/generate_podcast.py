@@ -8,7 +8,6 @@ import os
 import io
 import sys
 import json
-from pathlib import Path
 from pydub import AudioSegment
 import requests
 import datetime
@@ -70,7 +69,7 @@ class SimplePodcastGenerator:
 
             else:
                 raise ValueError(
-                    f"Segment {i} must have 'speaker'+'text' OR 'snippet' fields: {list(segment.keys())}"
+                    f"{i} has 'speaker'+'text' OR 'snippet': {list(segment.keys())}"
                 )
 
         return segments
@@ -93,9 +92,7 @@ class SimplePodcastGenerator:
     def text_to_speech(self, text, voice_id):
         """Convert text to speech using ElevenLabs API"""
         if not self.api_key:
-            raise ValueError(
-                "Set ELEVENLABS_API_KEY environment variable."
-            )
+            raise ValueError("Set ELEVENLABS_API_KEY environment variable.")
 
         url = f"{self.api_url}/text-to-speech/{voice_id}"
 
@@ -150,7 +147,7 @@ class SimplePodcastGenerator:
         for i, segment in enumerate(segments, 1):
             if segment.get("type") == "speech":
                 print(
-                    f"  [{i}/{len(segments)}] 🗣️  {segment['speaker']}: {segment['text'][:50]}..."
+                    f"[{i}/{len(segments)}]{segment['speaker']}:{segment['text'][:50]}"
                 )
 
                 # Generate speech
@@ -160,9 +157,7 @@ class SimplePodcastGenerator:
                 audio_segments.append(speech_audio)
 
             elif segment.get("type") == "audio_file":
-                print(
-                    f"  [{i}/{len(segments)}] 🎵 Loading audio file: {segment['snippet']}"
-                )
+                print(f"  [{i}/{len(segments)}]Loading audio file:{segment['snippet']}")
 
                 try:
                     # Load the audio file
@@ -192,7 +187,7 @@ class SimplePodcastGenerator:
             final_podcast.export(output_file, format="mp3", bitrate="192k")
 
             duration = len(final_podcast) / 1000  # Convert to seconds
-            print(f"✅ Podcast generated successfully!")
+            print("✅ Podcast generated successfully!")
             print(f"   Duration: {duration:.1f} seconds ({duration/60:.1f} minutes)")
             print(f"   File: {output_file}")
 
