@@ -13,11 +13,19 @@ from .get_directory_tree import get_directory_tree
 
 load_dotenv()
 
-DOWNLOAD_FOLDER = os.path.join("../", os.getenv("DOWNLOAD_FOLDER"))
+# For local execution
+# ROOT_DATA_DIR = os.path.join("../data")
+ROOT_DATA_DIR = os.path.join("./")
+
+# For local execution
+# DOWNLOAD_FOLDER = os.path.join("../", os.getenv("DOWNLOAD_FOLDER"))
+# For main execution
+DOWNLOAD_FOLDER = os.getenv("DOWNLOAD_FOLDER")
+
 AUDIO_DIR = os.path.join(DOWNLOAD_FOLDER, "voice_messages")
 COMBINED_DIR = os.path.join(AUDIO_DIR, "combined")
 METADATA_DIR = os.path.join(DOWNLOAD_FOLDER, "ptg_discord_data.json")
-ROOT_DATA_DIR = os.path.join("../data")
+
 # Ensure combined directory exists
 os.makedirs(COMBINED_DIR, exist_ok=True)
 
