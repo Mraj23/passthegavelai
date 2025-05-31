@@ -9,19 +9,20 @@ Simple Audio Snippet Extractor
 import whisper
 import json
 from pydub import AudioSegment
-from openai import OpenAI
+from openai import AsyncOpenAI
 import os
 import re
+import asyncio
 
 class AudioSnippetExtractor:
-    def __init__(self, openai_api_key=None):
+    def __init__(self, router_api_key=None, model=None):
         print("Loading Whisper model...")
         self.whisper_model = whisper.load_model("base")
-        
-        if openai_api_key:
-            self.openai_client = OpenAI(api_key=openai_api_key)
-        else:
-            self.openai_client = None
+        self.openrouter_client = AsyncOpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=router_api_key,
+    )
+        self.model = model or os.getenv("OPENROUTER_MODEL", "openai/gpt-3.5-turbo")
         
     def transcribe_with_timestamps(self, audio_file):
         """Step 1: Get transcript with word-level timestamps"""
@@ -29,7 +30,8 @@ class AudioSnippetExtractor:
         
         result = self.whisper_model.transcribe(
             audio_file,
-            word_timestamps=True
+            word_timestamps=True,
+            fp16=False
         )
         
         # Print all segments for debugging
@@ -43,7 +45,7 @@ class AudioSnippetExtractor:
             "segments": result["segments"]
         }
     
-    def find_interesting_parts(self, transcript):
+    async def find_interesting_parts(self, transcript):
         """Step 2: Ask LLM to identify interesting segments"""
         
         # Create segments with timestamps for the LLM
@@ -89,17 +91,17 @@ Return ONLY a JSON array like this:
 """
         
         try:
-            if not self.openai_client:
-                raise Exception("No OpenAI client available")
+            if not self.openrouter_client:
+                raise Exception("No OpenRouter client available")
                 
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4.1",
+            response = await self.openrouter_client.chat.completions.create(
+                model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3
             )
             
             # Print the raw LLM output for debugging
-            print("\n--- Raw OpenAI LLM Output ---")
+            print("\n--- Raw OpenRouter LLM Output ---")
             print(response.choices[0].message.content)
             print("--- End of LLM Output ---\n")
             
@@ -163,7 +165,7 @@ Return ONLY a JSON array like this:
         
         return snippets
     
-    def process_audio_file(self, audio_file, output_folder="snippets"):
+    async def process_audio_file(self, audio_file, output_folder="snippets"):
         """Main function: Process one audio file and extract interesting snippets"""
         
         print(f"\n🎵 Processing: {audio_file}")
@@ -173,7 +175,7 @@ Return ONLY a JSON array like this:
         
         # Step 2: Find interesting parts
         print("🤖 Asking LLM to find interesting parts...")
-        interesting_parts = self.find_interesting_parts(transcript)
+        interesting_parts = await self.find_interesting_parts(transcript)
         
         print(f"📝 Found {len(interesting_parts)} interesting segments:")
         for part in interesting_parts:
@@ -206,25 +208,27 @@ def main():
     
     if len(sys.argv) < 2:
         print("🎵 Audio Snippet Extractor")
-        print("Usage: python snippet_extractor.py <audio_file> [output_folder]")
-        print("\nExample: python snippet_extractor.py mike_vacation.wav snippets/")
+        print("Usage: python create_snippets.py <audio_file> [output_folder]")
+        print("\nExample: python create_snippets.py mike_vacation.wav snippets/")
         return
     
     audio_file = sys.argv[1]
     output_folder = sys.argv[2] if len(sys.argv) > 2 else "snippets"
     
-    # Get OpenAI API key
-    openai_key = os.getenv('OPENAI_API_KEY')
-    if not openai_key:
-        print("⚠️  No OPENAI_API_KEY found. Will use fallback snippet selection.")
+    # Get OpenRouter API key
+    router_api_key = os.getenv('OPENROUTER_API_KEY')
+    if not router_api_key:
+        print("⚠️  No OPENROUTER_API_KEY found. Will use fallback snippet selection.")
+        openrouter_client = None
+    else:
+        openrouter_client = AsyncOpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=router_api_key,
+        )
     
     # Process the audio file
-    extractor = AudioSnippetExtractor(openai_key)
-    snippets = extractor.process_audio_file(audio_file, output_folder)
-    
-    print(f"\n📋 Summary:")
-    for snippet in snippets:
-        print(f"  {snippet['filename']}: {snippet['reason']}")
+    extractor = AudioSnippetExtractor(openrouter_client)
+    asyncio.run(extractor.process_audio_file(audio_file, output_folder))
 
 if __name__ == "__main__":
     import sys

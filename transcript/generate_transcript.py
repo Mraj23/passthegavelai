@@ -9,8 +9,10 @@ import tempfile
 import sys
 import asyncio
 from pydub import AudioSegment
+from create_snippets import AudioSnippetExtractor
 
 load_dotenv()
+
 
 class ScriptSegment(BaseModel):
     speaker: str
@@ -22,7 +24,7 @@ class GenerateResponse(BaseModel):
 class Metadata(BaseModel):
     name: str
     audio_files: List[str]
-
+    
 def get_system_prompt() -> str:
     try:
         with open("prompt.txt", "r", encoding="utf-8") as f:
@@ -60,6 +62,8 @@ async def generate_script():
         print("OPENROUTER_API_KEY not set in environment.")
         sys.exit(1)
     model = os.getenv("OPENROUTER_MODEL", "openai/gpt-3.5-turbo")
+    # Process the audio file
+    extractor = AudioSnippetExtractor(router_api_key)
 
     metadata = get_metadata()
     for person in metadata:
@@ -81,7 +85,9 @@ async def generate_script():
     
     transcripts = {}
     for audio_file in audio_files:
-        audio_path = os.path.join(audio_dir, audio_file)
+        audio_path = os.path.join(audio_dir, audio_file) 
+        snippets = await extractor.process_audio_file(audio_path, "snippet")
+       
         transcript = transcribe_audio(audio_path)
         transcripts[audio_file] = transcript
 
@@ -90,11 +96,8 @@ async def generate_script():
         base_url="https://openrouter.ai/api/v1",
         api_key=router_api_key,
     )
-    user_prompt = json.dumps(transcripts)
-    print("Prompt", [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt}
-    ])
+    user_prompt = json.dumps(transcripts)    
+    
     try:
         response = await client.chat.completions.create(
             model=model,
