@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import asyncio
 from config import config
 
+
 def create_folders():
     data_folder = config.DOWNLOAD_FOLDER
     voice_folder = os.path.join(data_folder, "voice_messages")
@@ -16,11 +17,13 @@ def create_folders():
         os.makedirs(voice_folder)
     return voice_folder, voice_metadata_file
 
+
 def get_discord_client():
     intents = discord.Intents.default()
     intents.messages = True
     intents.message_content = True  # Needed to read message contents
     return discord.Client(intents=intents)
+
 
 async def download_voice_attachment(attachment, session, download_folder):
     file_path = os.path.join(download_folder, attachment.filename)
@@ -31,10 +34,13 @@ async def download_voice_attachment(attachment, session, download_folder):
                     f.write(await resp.read())
                 return attachment.filename
             else:
-                print(f"Failed to download {attachment.filename}: HTTP status {resp.status}")
+                print(
+                    f"Failed to download {attachment.filename}: HTTP status {resp.status}"
+                )
     except Exception as e:
         print(f"Error downloading {attachment.filename}: {e}")
     return None
+
 
 async def fetch_recent_messages(channel, time_delta):
     cutoff_time = datetime.utcnow() - time_delta
@@ -43,13 +49,14 @@ async def fetch_recent_messages(channel, time_delta):
         recent_messages.append(message)
     return recent_messages
 
+
 # This function will now be executed directly by the bot's event loop
 async def process_discord_messages_and_shutdown(client):
     """
     This is the core task that the bot will perform once it's ready.
     It fetches messages, downloads audio, saves data, and then shuts down the client.
     """
-    voice_folder, voice_metadata_file = create_folders() # Ensure folders exist
+    voice_folder, voice_metadata_file = create_folders()  # Ensure folders exist
 
     print("Starting message processing task...")
 
@@ -76,8 +83,12 @@ async def process_discord_messages_and_shutdown(client):
 
                 for attachment in message.attachments:
                     if attachment.content_type and "audio" in attachment.content_type:
-                        print(f"Voice message found: {attachment.filename} from {author_name}")
-                        filename = await download_voice_attachment(attachment, session, voice_folder)
+                        print(
+                            f"Voice message found: {attachment.filename} from {author_name}"
+                        )
+                        filename = await download_voice_attachment(
+                            attachment, session, voice_folder
+                        )
                         if filename:
                             if author_name not in user_audio_map:
                                 user_audio_map[author_name] = []
@@ -85,29 +96,27 @@ async def process_discord_messages_and_shutdown(client):
 
             output_list = []
             for name, files in user_audio_map.items():
-                output_list.append({
-                    "name": name,
-                    "audio_files": files
-                })
+                output_list.append({"name": name, "audio_files": files})
 
             with open(voice_metadata_file, "w", encoding="utf-8") as f:
                 json.dump(output_list, f, indent=4)
             print(f"Data saved to {voice_metadata_file}")
 
-            return True # Indicate success
+            return True  # Indicate success
 
         except Exception as e:
             print(f"Error during bot task: {e}")
-            return False # Indicate failure
+            return False  # Indicate failure
         finally:
             # Ensure the client is closed and the loop stopped after the task finishes
             print("Processing complete. Shutting down Discord client...")
             await client.close()
-            client.loop.stop() # This will stop the client.run() call
+            client.loop.stop()  # This will stop the client.run() call
+
 
 # No longer an async function
 def get_messages():
-    create_folders() # Create folders once at the start
+    create_folders()  # Create folders once at the start
 
     client = get_discord_client()
 
@@ -133,6 +142,7 @@ def get_messages():
     except Exception as e:
         print(f"Error during client.run: {e}")
         return False
+
 
 # if __name__ == "__main__":
 #     if main():
