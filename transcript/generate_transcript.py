@@ -1,10 +1,9 @@
 import os
 import json
-from typing import List, Dict
+from typing import List
 from pydantic import BaseModel, ValidationError
 from openai import AsyncOpenAI
 import whisper
-import tempfile
 import sys
 import asyncio
 from pydub import AudioSegment
@@ -105,7 +104,10 @@ async def generate_script():
     transcripts = {}
     for audio_file in audio_files:
         audio_path = os.path.join(COMBINED_DIR, audio_file)
-        snippets = await extractor.process_audio_file(audio_path, os.path.join(ROOT_DATA_DIR, "snippets"))
+        snippets = await extractor.process_audio_file(
+            audio_path, os.path.join(ROOT_DATA_DIR, "snippets")
+        )
+        print(snippets)
 
         transcript = transcribe_audio(audio_path)
         transcripts[audio_file] = transcript
@@ -133,13 +135,14 @@ async def generate_script():
         )
         content = response.choices[0].message.content.strip()
         script_json = json.loads(content)
-        
-        with open(os.path.join(ROOT_DATA_DIR, "transcript.json"), "w", encoding="utf-8") as f:
+
+        with open(
+            os.path.join(ROOT_DATA_DIR, "transcript.json"), "w", encoding="utf-8"
+        ) as f:
             json.dump(script_json, f, indent=2, ensure_ascii=False)
-            
+
         print(json.dumps(json.loads(script_json), indent=2, ensure_ascii=False))
 
-        
     except (json.JSONDecodeError, ValidationError) as e:
         print(
             f"Failed to parse model output as valid JSON: {str(e)}\nRaw output: {content}"
@@ -148,6 +151,10 @@ async def generate_script():
     except Exception as e:
         print(f"OpenRouter API error: {str(e)}")
         sys.exit(1)
+
+
+def generate_script_sync():
+    asyncio.run(generate_script())
 
 
 if __name__ == "__main__":

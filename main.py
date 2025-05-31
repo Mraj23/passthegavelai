@@ -1,5 +1,6 @@
 from discord.discord_filtered_read import get_messages
 from discord.discord_write_attachment import send_attachment
+from transcript.generate_transcript import generate_script_sync
 
 
 def main():
@@ -8,6 +9,7 @@ def main():
         print("Failed to get messages")
 
     # TODO: Generate highlights of snippets based on audio
+    generate_script_sync()
 
     # TODO: Create a podcast transcript with snippets embedded
 
