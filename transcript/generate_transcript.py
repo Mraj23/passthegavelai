@@ -17,16 +17,20 @@ COMBINED_DIR = os.path.join(AUDIO_DIR, "combined")
 # Ensure combined directory exists
 os.makedirs(COMBINED_DIR, exist_ok=True)
 
+
 class ScriptSegment(BaseModel):
     speaker: str
     text: str
 
+
 class GenerateResponse(BaseModel):
     script: List[ScriptSegment]
+
 
 class Metadata(BaseModel):
     name: str
     audio_files: List[str]
+
 
 def get_system_prompt() -> str:
     try:
@@ -35,6 +39,7 @@ def get_system_prompt() -> str:
     except FileNotFoundError:
         print("prompt.txt file not found. Please add your system prompt to prompt.txt.")
         sys.exit(1)
+
 
 def transcribe_audio(audio_path: str) -> str:
     print("transcribing", audio_path)
@@ -46,10 +51,12 @@ def transcribe_audio(audio_path: str) -> str:
         print(f"Whisper transcription failed for {audio_path}: {str(e)}")
         return ""
 
+
 def get_metadata() -> List[Metadata]:
     with open("./audio/metadata.json", "r", encoding="utf-8") as f:
         metadata = json.load(f)["metadata"]
         return [Metadata(**data) for data in metadata]
+
 
 def concat_audio_files(audio_files: List[str], output_path: str):
     """Concatenate multiple audio files into one and export as WAV."""
@@ -58,6 +65,7 @@ def concat_audio_files(audio_files: List[str], output_path: str):
         audio = AudioSegment.from_file(file)
         combined += audio
     combined.export(output_path, format="wav")
+
 
 async def generate_script():
     router_api_key = os.getenv("OPENROUTER_API_KEY")
@@ -80,11 +88,14 @@ async def generate_script():
     if not os.path.isdir(audio_dir):
         print(f"Audio directory not found: {audio_dir}")
         sys.exit(1)
-    audio_files = [f for f in os.listdir(COMBINED_DIR) if os.path.isfile(os.path.join(COMBINED_DIR, f))]
+    audio_files = [
+        f
+        for f in os.listdir(COMBINED_DIR)
+        if os.path.isfile(os.path.join(COMBINED_DIR, f))
+    ]
     if not audio_files:
         print(f"No audio files found in {COMBINED_DIR}")
         sys.exit(1)
-
 
     transcripts = {}
     for audio_file in audio_files:
@@ -106,21 +117,26 @@ async def generate_script():
             model=model,
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ],
             temperature=0.7,
             max_tokens=2000,
         )
         content = response.choices[0].message.content.strip()
         script_json = json.loads(content)
-        validated = GenerateResponse(script=[ScriptSegment(**seg) for seg in script_json])
+        validated = GenerateResponse(
+            script=[ScriptSegment(**seg) for seg in script_json]
+        )
         print(json.dumps(json.loads(validated.json()), indent=2, ensure_ascii=False))
     except (json.JSONDecodeError, ValidationError) as e:
-        print(f"Failed to parse model output as valid JSON: {str(e)}\nRaw output: {content}")
+        print(
+            f"Failed to parse model output as valid JSON: {str(e)}\nRaw output: {content}"
+        )
         sys.exit(1)
     except Exception as e:
         print(f"OpenRouter API error: {str(e)}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(generate_script())
