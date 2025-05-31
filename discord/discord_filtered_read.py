@@ -24,14 +24,15 @@ def get_discord_client():
     return discord.Client(intents=intents)
 
 
-async def download_voice_attachment(attachment, session, download_folder):
-    file_path = os.path.join(download_folder, attachment.filename)
+async def download_voice_attachment(attachment, session, download_folder, index):
+    my_filename = "_" + str(index) + attachment.filename
+    file_path = os.path.join(download_folder, my_filename)
     try:
         async with session.get(attachment.url) as resp:
             if resp.status == 200:
                 with open(file_path, "wb") as f:
                     f.write(await resp.read())
-                return attachment.filename
+                return my_filename
             else:
                 print(f"Failed to download {attachment.filename}: status {resp.status}")
     except Exception as e:
@@ -78,14 +79,15 @@ async def process_discord_messages_and_shutdown(client):
 
                 author_name = message.author.name
 
-                for attachment in message.attachments:
+                for i, attachment in enumerate(message.attachments):
                     if attachment.content_type and "audio" in attachment.content_type:
                         print(
                             f"Voice message: {attachment.filename} from {author_name}"
                         )
                         filename = await download_voice_attachment(
-                            attachment, session, voice_folder
+                            attachment, session, voice_folder, i
                         )
+                        print(filename)
                         if filename:
                             if author_name not in user_audio_map:
                                 user_audio_map[author_name] = []
