@@ -15,7 +15,7 @@ load_dotenv()
 
 # For local execution
 # ROOT_DATA_DIR = os.path.join("../data")
-ROOT_DATA_DIR = os.path.join("./")
+ROOT_DATA_DIR = os.path.join("./data")
 
 # For local execution
 # DOWNLOAD_FOLDER = os.path.join("../", os.getenv("DOWNLOAD_FOLDER"))
@@ -27,9 +27,9 @@ COMBINED_DIR = os.path.join(AUDIO_DIR, "combined")
 METADATA_DIR = os.path.join(DOWNLOAD_FOLDER, "ptg_discord_data.json")
 
 # Local running
-# PROMPT_FILE = os.getenv("prompt.txt")
+# PROMPT_FILE = os.path.join("prompt.txt")
 # Main running
-PROMPT_FILE = os.getenv("transcript/prompt.txt")
+PROMPT_FILE = os.path.join("transcript/prompt.txt")
 
 # Ensure combined directory exists
 os.makedirs(COMBINED_DIR, exist_ok=True)
