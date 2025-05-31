@@ -26,6 +26,11 @@ AUDIO_DIR = os.path.join(DOWNLOAD_FOLDER, "voice_messages")
 COMBINED_DIR = os.path.join(AUDIO_DIR, "combined")
 METADATA_DIR = os.path.join(DOWNLOAD_FOLDER, "ptg_discord_data.json")
 
+# Local running
+# PROMPT_FILE = os.getenv("prompt.txt")
+# Main running
+PROMPT_FILE = os.getenv("transcript/prompt.txt")
+
 # Ensure combined directory exists
 os.makedirs(COMBINED_DIR, exist_ok=True)
 
@@ -46,7 +51,7 @@ class Metadata(BaseModel):
 
 def get_system_prompt() -> str:
     try:
-        with open("prompt.txt", "r", encoding="utf-8") as f:
+        with open(PROMPT_FILE, "r", encoding="utf-8") as f:
             return f.read().strip()
     except FileNotFoundError:
         print("prompt.txt file not found. Please add your system prompt to prompt.txt.")
