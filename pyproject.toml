@@ -6,5 +6,7 @@ exclude = '''
 /(
     \.git
   | \.venv
+  | build
+  | dist
 )/
 '''

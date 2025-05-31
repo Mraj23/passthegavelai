@@ -6,13 +6,14 @@ attrs==25.3.0
 black==25.1.0
 cfgv==3.4.0
 click==8.1.8
+black==25.1.0
+cfgv==3.4.0
+click==8.1.8
 discord==2.3.2
 discord.py==2.5.2
 distlib==0.3.9
 dotenv==0.9.9
 filelock==3.18.0
-flake8==7.2.0
-flake8-bugbear==24.12.12
 frozenlist==1.6.0
 identify==2.6.12
 idna==3.10

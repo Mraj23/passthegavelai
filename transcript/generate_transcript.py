@@ -22,18 +22,22 @@ METADATA_DIR = os.path.join(DOWNLOAD_FOLDER, 'ptg_discord_data.json')
 os.makedirs(COMBINED_DIR, exist_ok=True)
 
 
+
 class ScriptSegment(BaseModel):
     speaker: str
     text: str
+
 
 
 class GenerateResponse(BaseModel):
     script: List[ScriptSegment]
 
 
+
 class Metadata(BaseModel):
     name: str
     audio_files: List[str]
+
 
 
 def get_system_prompt() -> str:
@@ -43,6 +47,7 @@ def get_system_prompt() -> str:
     except FileNotFoundError:
         print("prompt.txt file not found. Please add your system prompt to prompt.txt.")
         sys.exit(1)
+
 
 
 def transcribe_audio(audio_path: str) -> str:
@@ -56,10 +61,12 @@ def transcribe_audio(audio_path: str) -> str:
         return ""
 
 
+
 def get_metadata() -> List[Metadata]:
     with open(METADATA_DIR, "r", encoding="utf-8") as f:
         metadata = json.load(f)
         return [Metadata(**data) for data in metadata]
+
 
 
 def concat_audio_files(audio_files: List[str], output_path: str):
@@ -69,6 +76,7 @@ def concat_audio_files(audio_files: List[str], output_path: str):
         audio = AudioSegment.from_file(file)
         combined += audio
     combined.export(output_path, format="wav")
+
 
 
 async def generate_script():
@@ -91,8 +99,11 @@ async def generate_script():
     if not os.path.isdir(AUDIO_DIR):
         print(f"Audio directory not found: {AUDIO_DIR}")
         sys.exit(1)
-
-    audio_files = [f for f in os.listdir(COMBINED_DIR) if os.path.isfile(os.path.join(COMBINED_DIR, f))]
+    audio_files = [
+        f
+        for f in os.listdir(COMBINED_DIR)
+        if os.path.isfile(os.path.join(COMBINED_DIR, f))
+    ]
     if not audio_files:
         print(f"No audio files found in {COMBINED_DIR}")
         sys.exit(1)
@@ -117,6 +128,7 @@ async def generate_script():
         "snippets_tree": snippets_tree
     })
 
+
     try:
         response = await client.chat.completions.create(
             model=model,
@@ -132,8 +144,14 @@ async def generate_script():
         validated = GenerateResponse(
             script=[ScriptSegment(**seg) for seg in script_json]
         )
+        validated = GenerateResponse(
+            script=[ScriptSegment(**seg) for seg in script_json]
+        )
         print(json.dumps(json.loads(validated.json()), indent=2, ensure_ascii=False))
     except (json.JSONDecodeError, ValidationError) as e:
+        print(
+            f"Failed to parse model output as valid JSON: {str(e)}\nRaw output: {content}"
+        )
         print(
             f"Failed to parse model output as valid JSON: {str(e)}\nRaw output: {content}"
         )
@@ -141,6 +159,7 @@ async def generate_script():
     except Exception as e:
         print(f"OpenRouter API error: {str(e)}")
         sys.exit(1)
+
 
 
 if __name__ == "__main__":
