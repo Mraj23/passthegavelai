@@ -8,6 +8,7 @@ import whisper
 import tempfile
 import sys
 import asyncio
+from pydub import AudioSegment
 
 load_dotenv()
 
@@ -17,6 +18,10 @@ class ScriptSegment(BaseModel):
 
 class GenerateResponse(BaseModel):
     script: List[ScriptSegment]
+
+class Metadata(BaseModel):
+    name: str
+    audio_files: List[str]
 
 def get_system_prompt() -> str:
     try:
@@ -36,6 +41,19 @@ def transcribe_audio(audio_path: str) -> str:
         print(f"Whisper transcription failed for {audio_path}: {str(e)}")
         return ""
 
+def get_metadata() -> List[Metadata]:
+    with open("./audio/metadata.json", "r", encoding="utf-8") as f:
+        metadata = json.load(f)["metadata"]
+        return [Metadata(**data) for data in metadata]
+
+def concat_audio_files(audio_files: List[str], output_path: str):
+    """Concatenate multiple audio files into one and export as WAV."""
+    combined = AudioSegment.empty()
+    for file in audio_files:
+        audio = AudioSegment.from_file(file)
+        combined += audio
+    combined.export(output_path, format="wav")
+
 async def generate_script():
     router_api_key = os.getenv("OPENROUTER_API_KEY")
     if not router_api_key:
@@ -43,14 +61,23 @@ async def generate_script():
         sys.exit(1)
     model = os.getenv("OPENROUTER_MODEL", "openai/gpt-3.5-turbo")
 
+    metadata = get_metadata()
+    for person in metadata:
+        # Concatenate audio files for this person
+        input_files = [os.path.join("audio", f) for f in person.audio_files]
+        output_file = os.path.join("audio", f"{person.name.lower()}_combined.wav")
+        concat_audio_files(input_files, output_file)
+        person.audio_files = [f"{person.name.lower()}_combined.wav"]
+    
     audio_dir = "audio"
     if not os.path.isdir(audio_dir):
         print(f"Audio directory not found: {audio_dir}")
         sys.exit(1)
-    audio_files = [f for f in os.listdir(audio_dir) if os.path.isfile(os.path.join(audio_dir, f)) and f.lower().endswith((".wav", ".mp3", ".m4a", ".flac", ".ogg", ".webm"))]
+    audio_files = [f for f in os.listdir(audio_dir) if os.path.isfile(os.path.join(audio_dir, f)) and f.lower().endswith("_combined.wav")]
     if not audio_files:
         print(f"No audio files found in {audio_dir}")
         sys.exit(1)
+    
     
     transcripts = {}
     for audio_file in audio_files:

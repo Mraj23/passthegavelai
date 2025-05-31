@@ -1,0 +1,16 @@
+{
+  "metadata": [
+    {
+      "name": "Len",
+      "audio_files": ["len.m4a"]
+    },
+    {
+      "name": "Raj",
+      "audio_files": ["raj.m4a"]
+    },
+    {
+      "name": "Phi",
+      "audio_files": ["len.m4a", "raj.m4a"]
+    }
+  ]
+}
