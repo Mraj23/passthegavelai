@@ -13,23 +13,26 @@ USERNAME_MAP = {
     "Phi": "Phi",
     # Add more mappings as needed
 }
-DATA_FOLDER = "ptg_discord_data"
-VOICE_FOLDER = os.path.join(DATA_FOLDER, "voice_messages")
-JSON_FILE = os.path.join(DATA_FOLDER, "ptg_discord_data.json")
 
 def load_env_vars():
     load_dotenv()
     return {
         "DISCORD_TOKEN": os.getenv("DISCORD_TOKEN"),
+        "DOWNLOAD_FOLDER": os.getenv("DOWNLOAD_FOLDER"),
         "SERVER_ID": int(os.getenv("SERVER_ID")),
         "UPLOAD_CHANNEL_ID": int(os.getenv("UPLOAD_CHANNEL_ID")),
     }
 
 def create_folders():
-    if not os.path.exists(DATA_FOLDER):
-        os.makedirs(DATA_FOLDER)
-    if not os.path.exists(VOICE_FOLDER):
-        os.makedirs(VOICE_FOLDER)
+    env = load_env_vars()
+    data_folder = env["DOWNLOAD_FOLDER"]
+    voice_folder = os.path.join(data_folder, "voice_messages")
+    voice_metadata_file = os.path.join(data_folder, "ptg_discord_data.json")
+    if not os.path.exists(data_folder):
+        os.makedirs(data_folder)
+    if not os.path.exists(voice_folder):
+        os.makedirs(voice_folder)
+    return voice_folder, voice_metadata_file
 
 def get_discord_client():
     intents = discord.Intents.default()
@@ -65,7 +68,7 @@ async def process_discord_messages_and_shutdown(client):
     It fetches messages, downloads audio, saves data, and then shuts down the client.
     """
     env = load_env_vars() # Load env vars again, or pass them in from main
-    create_folders() # Ensure folders exist
+    voice_folder, voice_metadata_file = create_folders() # Ensure folders exist
 
     print("Starting message processing task...")
 
@@ -94,7 +97,7 @@ async def process_discord_messages_and_shutdown(client):
                 for attachment in message.attachments:
                     if attachment.content_type and "audio" in attachment.content_type:
                         print(f"Voice message found: {attachment.filename} from {author_name}")
-                        filename = await download_voice_attachment(attachment, session, VOICE_FOLDER)
+                        filename = await download_voice_attachment(attachment, session, voice_folder)
                         if filename:
                             if prettier_name not in user_audio_map:
                                 user_audio_map[prettier_name] = []
@@ -107,9 +110,9 @@ async def process_discord_messages_and_shutdown(client):
                     "audio_files": files
                 })
 
-            with open(JSON_FILE, "w", encoding="utf-8") as f:
+            with open(voice_metadata_file, "w", encoding="utf-8") as f:
                 json.dump(output_list, f, indent=4)
-            print(f"Data saved to {JSON_FILE}")
+            print(f"Data saved to {voice_metadata_file}")
 
             return True # Indicate success
 
@@ -123,7 +126,7 @@ async def process_discord_messages_and_shutdown(client):
             client.loop.stop() # This will stop the client.run() call
 
 # No longer an async function
-def main():
+def get_messages():
     env = load_env_vars()
     create_folders() # Create folders once at the start
 
