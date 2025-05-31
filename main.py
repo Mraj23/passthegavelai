@@ -16,8 +16,10 @@ def main():
     generate_podcast_from_data()
 
     # Forward the podcast to Discord
-    file_path = "data/initial_data_from_discord/voice_messages/voice-message.ogg"
-    message = "demo for phi and raj"
+    file_path = "data/podcast.mp3"
+    message = (
+        "Hey! Here's your podcast for this week. Lots lore-maxxing things to hear :)"
+    )
     send_attachment(message=message, file_path=file_path)
 
 
