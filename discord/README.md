@@ -19,3 +19,9 @@ pip install -r requirements.txt
 # Save new requirements
 pip freeze > requirements.txt
 ```
+
+# Examples
+
+![bot-perms](readme_images/bot-perms.png)
+
+![message-intents](readme_images/message-intents.png)

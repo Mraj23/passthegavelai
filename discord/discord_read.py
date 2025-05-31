@@ -1,8 +1,11 @@
 import discord
 import aiohttp
 import os
+from dotenv import load_dotenv
 
-TOKEN = os.getenv("DISCORD_TOKEN")
+load_dotenv()
+
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 DOWNLOAD_FOLDER = os.getenv("DOWNLOAD_FOLDER")
 SERVER_ID = int(os.getenv("SERVER_ID"))
 UPLOAD_CHANNEL_ID = int(os.getenv("UPLOAD_CHANNEL_ID"))
@@ -48,4 +51,4 @@ async def download_voice(attachment):
                     f.write(await resp.read())
                 print(f"Downloaded to {file_path}")
 
-client.run(TOKEN)
+client.run(DISCORD_TOKEN)
