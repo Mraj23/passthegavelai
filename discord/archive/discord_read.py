@@ -1,14 +1,12 @@
 import discord
 import aiohttp
 import os
-from dotenv import load_dotenv
+from config import config
 
-load_dotenv()
-
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-DOWNLOAD_FOLDER = os.getenv("DOWNLOAD_FOLDER")
-SERVER_ID = int(os.getenv("SERVER_ID"))
-UPLOAD_CHANNEL_ID = int(os.getenv("UPLOAD_CHANNEL_ID"))
+DISCORD_TOKEN = config.DISCORD_TOKEN
+DOWNLOAD_FOLDER = config.DOWNLOAD_FOLDER
+SERVER_ID = config.SERVER_ID
+UPLOAD_CHANNEL_ID = config.UPLOAD_CHANNEL_ID
 
 intents = discord.Intents.default()
 intents.messages = True

@@ -1,11 +1,9 @@
 import discord
 import os
-from dotenv import load_dotenv
+from config import config
 
-load_dotenv()
-
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-SEND_CHANNEL_ID = int(os.getenv("SEND_CHANNEL_ID"))
+DISCORD_TOKEN = config.DISCORD_TOKEN
+SEND_CHANNEL_ID = config.SEND_CHANNEL_ID
 
 intents = discord.Intents.default()
 intents.messages = True
