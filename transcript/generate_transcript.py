@@ -9,7 +9,8 @@ import sys
 import asyncio
 from pydub import AudioSegment
 from create_snippets import AudioSnippetExtractor
-from config import config
+from dotenv import load_dotenv
+from get_directory_tree import get_directory_tree
 
 load_dotenv()
 
@@ -60,7 +61,6 @@ def concat_audio_files(audio_files: List[str], output_path: str):
     for file in audio_files:
         audio = AudioSegment.from_file(file)
         combined += audio
-    print("concat_audio_files", output_path)
     combined.export(output_path, format="wav")
 
 async def generate_script():
@@ -80,15 +80,14 @@ async def generate_script():
         concat_audio_files(input_files, output_file)
         person.audio_files = [f"{person.name.lower()}_combined.wav"]
 
-    audio_dir = "audio"
-    if not os.path.isdir(audio_dir):
-        print(f"Audio directory not found: {audio_dir}")
+    if not os.path.isdir(AUDIO_DIR):
+        print(f"Audio directory not found: {AUDIO_DIR}")
         sys.exit(1)
+    
     audio_files = [f for f in os.listdir(COMBINED_DIR) if os.path.isfile(os.path.join(COMBINED_DIR, f))]
     if not audio_files:
         print(f"No audio files found in {COMBINED_DIR}")
         sys.exit(1)
-
 
     transcripts = {}
     for audio_file in audio_files:
@@ -98,19 +97,24 @@ async def generate_script():
         transcript = transcribe_audio(audio_path)
         transcripts[audio_file] = transcript
 
+    snippets_tree = get_directory_tree("./snippet")
+
     system_prompt = get_system_prompt()
     client = AsyncOpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=router_api_key,
     )
-    user_prompt = json.dumps(transcripts)
-
+    user_prompt = json.dumps({
+        "transcripts": transcripts,
+        "snippets_tree": snippets_tree
+    })
+        
     try:
         response = await client.chat.completions.create(
             model=model,
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ],
             temperature=0.7,
             max_tokens=2000,

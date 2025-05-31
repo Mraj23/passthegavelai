@@ -195,11 +195,11 @@ Return ONLY a JSON array like this. Do NOT include backticks (`):
             "snippets": snippets
         }
         
-        metadata_file = os.path.join(audio_output_folder, "snippets_metadata.json")
-        with open(metadata_file, 'w') as f:
-            json.dump(metadata, f, indent=2)
+        # metadata_file = os.path.join(audio_output_folder, "snippets_metadata.json")
+        # with open(metadata_file, 'w') as f:
+        #     json.dump(metadata, f, indent=2)
+        # print(f"💾 Saved metadata to: {metadata_file}")
         
-        print(f"💾 Saved metadata to: {metadata_file}")
         print(f"🎉 Done! Generated {len(snippets)} snippets in '{audio_output_folder}' folder")
         
         return snippets
