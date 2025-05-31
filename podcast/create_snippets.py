@@ -11,6 +11,7 @@ import json
 from pydub import AudioSegment
 from openai import OpenAI
 import os
+import re
 
 class AudioSnippetExtractor:
     def __init__(self, openai_api_key=None):
@@ -56,7 +57,7 @@ class AudioSnippetExtractor:
             })
         
         prompt = f"""
-You are analyzing an audio transcript to find the most interesting parts for a podcast.
+You are analyzing an audio transcript to find the most interesting parts for a podcast about a group of friends. Each transcript is going to be about a persons life updates and what they did over the week or month.
 
 Here are the segments with timestamps:
 {json.dumps(segments_for_llm, indent=2)}
@@ -65,10 +66,8 @@ You can select interesting moments that may span multiple contiguous segments (f
 
 Please identify the 2 most interesting/engaging segments that would make good audio clips.
 Look for:
-- Funny moments
-- Exciting stories
-- Emotional moments
-- Surprising information
+- Really Funny moments
+- Big life updates
 
 Return ONLY a JSON array like this:
 [
@@ -121,11 +120,17 @@ Return ONLY a JSON array like this:
                 })
             return fallback
     
+    def sanitize_filename(self, text):
+        # Lowercase, replace spaces with underscores, remove non-alphanumeric/underscore
+        return re.sub(r'[^a-zA-Z0-9_]', '', text.replace(' ', '_')).lower()
+
     def extract_audio_snippets(self, audio_file, interesting_parts, output_folder="snippets"):
         """Step 3: Extract the actual audio clips"""
         
-        # Create output folder
-        os.makedirs(output_folder, exist_ok=True)
+        # Create a subfolder for this audio file
+        audio_base = os.path.splitext(os.path.basename(audio_file))[0]
+        audio_output_folder = os.path.join(output_folder, audio_base)
+        os.makedirs(audio_output_folder, exist_ok=True)
         
         # Load the audio file
         audio = AudioSegment.from_file(audio_file)
@@ -139,9 +144,10 @@ Return ONLY a JSON array like this:
             # Extract the snippet
             snippet = audio[start_ms:end_ms]
             
-            # Save the snippet
-            filename = f"snippet_{i+1}_{part['start']:.1f}s.mp3"
-            filepath = os.path.join(output_folder, filename)
+            # Sanitize reason for filename
+            reason_safe = self.sanitize_filename(part['reason'])
+            filename = f"{i+1}_{reason_safe}.mp3"
+            filepath = os.path.join(audio_output_folder, filename)
             snippet.export(filepath, format="mp3")
             
             snippets.append({
@@ -178,18 +184,20 @@ Return ONLY a JSON array like this:
         snippets = self.extract_audio_snippets(audio_file, interesting_parts, output_folder)
         
         # Save metadata
+        audio_base = os.path.splitext(os.path.basename(audio_file))[0]
+        audio_output_folder = os.path.join(output_folder, audio_base)
         metadata = {
             "source_file": audio_file,
             "full_transcript": transcript["full_text"],
             "snippets": snippets
         }
         
-        metadata_file = os.path.join(output_folder, "snippets_metadata.json")
+        metadata_file = os.path.join(audio_output_folder, "snippets_metadata.json")
         with open(metadata_file, 'w') as f:
             json.dump(metadata, f, indent=2)
         
         print(f"💾 Saved metadata to: {metadata_file}")
-        print(f"🎉 Done! Generated {len(snippets)} snippets in '{output_folder}' folder")
+        print(f"🎉 Done! Generated {len(snippets)} snippets in '{audio_output_folder}' folder")
         
         return snippets
 
