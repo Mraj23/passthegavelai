@@ -71,6 +71,8 @@ Look for:
 - Really Funny moments
 - Big life updates
 
+Keep the clips short (up to 30 seconds at most and just keep the most entertaining parts)
+
 Return ONLY a JSON array like this. Do NOT include backticks (`):
 [
   {{
@@ -208,9 +210,7 @@ Return ONLY a JSON array like this. Do NOT include backticks (`):
         #     json.dump(metadata, f, indent=2)
         # print(f"💾 Saved metadata to: {metadata_file}")
 
-        print(
-            f"🎉 Done! Generated {len(snippets)} snippets in '{output_folder}' folder"
-        )
+        print(f"🎉 Done! Generated {len(snippets)} snippets in '{output_folder}' folder")
 
         return snippets
 

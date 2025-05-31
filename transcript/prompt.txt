@@ -22,7 +22,7 @@ Generate a JSON array with segments in this exact format:
     "snippet": "path/to/audio/file.mp3"
   },
   {
-    "speaker": "Host2", 
+    "speaker": "Host2",
     "text": "Oh my god, did you hear that?..."
   }
 ]
@@ -90,7 +90,7 @@ For each friend's experience:
 
 ### Avoid:
 - Formal broadcast language
-- Over-explaining obvious things  
+- Over-explaining obvious things
 - Being judgmental about friends
 - Forced humor or try-hard jokes
 - Too much dead air or awkward pauses

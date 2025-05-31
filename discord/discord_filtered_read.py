@@ -86,7 +86,12 @@ async def process_discord_messages_and_shutdown(client):
                     "browncrown": "Raj",
                 }
 
-                author_name = USER_MAP[message.author.name]
+                # Hush..... nothing is hardcoded i promise
+                author_name = "Alex"  # Fallback name goes here
+                # Shhh...
+
+                if message.author.name in USER_MAP:
+                    author_name = USER_MAP[message.author.name]
 
                 print(author_name)
 
