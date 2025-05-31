@@ -1,7 +1,7 @@
 import os
 
 
-def get_directory_tree(root_path: str) -> str:
+def get_directory_tree(root_path: str, parent_path: str = None) -> str:
     """
     Walks the directory at `root_path` and returns a multiline string
     showing its tree. Directories appear on their own line; files are
@@ -17,6 +17,7 @@ def get_directory_tree(root_path: str) -> str:
             | another_file.md
 
     :param root_path: Path to the folder whose tree you want to generate.
+    :param parent_path: Optional parent path to prepend to the tree output.
     :return: A single string containing the directory tree (with newlines).
     """
     lines = []
@@ -45,4 +46,8 @@ def get_directory_tree(root_path: str) -> str:
 
     # Start recursion at indent_level=0
     _helper(root_path, 0)
-    return "\n".join(lines)
+    tree_str = "\n".join(lines)
+    if parent_path:
+        return parent_path + "/" + tree_str
+    else:
+        return tree_str

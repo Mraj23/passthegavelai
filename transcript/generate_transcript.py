@@ -122,7 +122,7 @@ async def generate_script():
         transcript = transcribe_audio(audio_path)
         transcripts[audio_file] = transcript
 
-    snippets_tree = get_directory_tree(SNIPPETS_DIR)
+    snippets_tree = get_directory_tree(SNIPPETS_DIR, "data")
 
     system_prompt = get_system_prompt()
     client = AsyncOpenAI(
