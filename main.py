@@ -15,5 +15,8 @@ def main():
 
     # Forward the podcast to Discord
     file_path = "data/initial_data_from_discord/voice_messages/voice-message.ogg"
-    message = "wagwan fam!"
+    message = "demo for phi and raj"
     send_attachment(message=message, file_path=file_path)
+
+if __name__ == "__main__":
+    main()
