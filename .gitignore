@@ -8,3 +8,6 @@
 
 # Env
 *.env
+
+# Python
+.venv
