@@ -6,9 +6,7 @@ Converts a text script with Speaker: Text format into an audio podcast
 
 import os
 import io
-import sys
 import json
-from pathlib import Path
 from pydub import AudioSegment
 import requests
 import datetime
@@ -191,7 +189,7 @@ class SimplePodcastGenerator:
             final_podcast.export(output_file, format="mp3", bitrate="192k")
 
             duration = len(final_podcast) / 1000  # Convert to seconds
-            print(f"✅ Podcast generated successfully!")
+            print("✅ Podcast generated successfully!")
             print(f"   Duration: {duration:.1f} seconds ({duration/60:.1f} minutes)")
             print(f"   File: {output_file}")
 
@@ -206,7 +204,7 @@ def generate_podcast_from_data():
     today = datetime.now().strftime("%Y-%m-%d")
     output_file = f"data/podcast_{today}.mp3"
 
-    api_key = os.getenv('ELEVENLABS_API_KEY')
+    api_key = os.getenv("ELEVENLABS_API_KEY")
     if not api_key:
         print("⚠️  No ELEVENLABS_API_KEY found in config.")
         raise EnvironmentError("ELEVENLABS_API_KEY is required.")
@@ -221,20 +219,21 @@ def generate_podcast_from_data():
         print("\n❌ Failed to generate podcast")
     return output_file
 
+
 def main():
     input_file = "data/transcript.json"
-    output_file = f"data/podcast_today.mp3"
+    output_file = "data/podcast_today.mp3"
 
-    api_key = os.getenv('ELEVENLABS_API_KEY')
+    api_key = os.getenv("ELEVENLABS_API_KEY")
     if not api_key:
         print("⚠️  No ELEVENLABS_API_KEY environment variable found.")
         raise EnvironmentError("ELEVENLABS_API_KEY environment variable is missing.")
-    
+
     # Create generator and process - you can adjust pause duration here
     pause_ms = 800  # Change this value to adjust pauses (in milliseconds)
     generator = SimplePodcastGenerator(api_key, pause_duration=pause_ms)
     result = generator.generate_podcast(input_file, output_file)
-    
+
     if result:
         print(f"\n🎉 Success! Your podcast is ready: {result}")
     else:
