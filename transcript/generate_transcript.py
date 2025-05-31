@@ -13,6 +13,12 @@ from create_snippets import AudioSnippetExtractor
 
 load_dotenv()
 
+DOWNLOAD_FOLDER = os.getenv("DOWNLOAD_FOLDER")
+AUDIO_DIR = "audio"
+COMBINED_DIR = os.path.join(AUDIO_DIR, "combined")
+
+# Ensure combined directory exists
+os.makedirs(COMBINED_DIR, exist_ok=True)
 
 class ScriptSegment(BaseModel):
     speaker: str
@@ -61,31 +67,29 @@ async def generate_script():
     if not router_api_key:
         print("OPENROUTER_API_KEY not set in environment.")
         sys.exit(1)
-    model = os.getenv("OPENROUTER_MODEL", "openai/gpt-3.5-turbo")
+    model = os.getenv("OPENROUTER_MODEL")
     # Process the audio file
     extractor = AudioSnippetExtractor(router_api_key)
 
     metadata = get_metadata()
     for person in metadata:
         # Concatenate audio files for this person
-        input_files = [os.path.join("audio", f) for f in person.audio_files]
-        output_file = os.path.join("audio", f"{person.name.lower()}_combined.wav")
+        input_files = [os.path.join(AUDIO_DIR, f) for f in person.audio_files]
+        output_file = os.path.join(COMBINED_DIR, f"{person.name.lower()}.wav")
         concat_audio_files(input_files, output_file)
-        person.audio_files = [f"{person.name.lower()}_combined.wav"]
     
-    audio_dir = "audio"
-    if not os.path.isdir(audio_dir):
-        print(f"Audio directory not found: {audio_dir}")
+    if not os.path.isdir(AUDIO_DIR):
+        print(f"Audio directory not found: {AUDIO_DIR}")
         sys.exit(1)
-    audio_files = [f for f in os.listdir(audio_dir) if os.path.isfile(os.path.join(audio_dir, f)) and f.lower().endswith("_combined.wav")]
+    audio_files = [f for f in os.listdir(COMBINED_DIR) if os.path.isfile(os.path.join(COMBINED_DIR, f))]
     if not audio_files:
-        print(f"No audio files found in {audio_dir}")
+        print(f"No audio files found in {COMBINED_DIR}")
         sys.exit(1)
     
     
     transcripts = {}
     for audio_file in audio_files:
-        audio_path = os.path.join(audio_dir, audio_file) 
+        audio_path = os.path.join(COMBINED_DIR, audio_file) 
         snippets = await extractor.process_audio_file(audio_path, "snippet")
        
         transcript = transcribe_audio(audio_path)

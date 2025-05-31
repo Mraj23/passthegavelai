@@ -15,14 +15,14 @@ import re
 import asyncio
 
 class AudioSnippetExtractor:
-    def __init__(self, router_api_key=None, model=None):
+    def __init__(self, router_api_key=None):
         print("Loading Whisper model...")
         self.whisper_model = whisper.load_model("base")
         self.openrouter_client = AsyncOpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=router_api_key,
     )
-        self.model = model or os.getenv("OPENROUTER_MODEL", "openai/gpt-3.5-turbo")
+        self.model = os.getenv("OPENROUTER_MODEL")
         
     def transcribe_with_timestamps(self, audio_file):
         """Step 1: Get transcript with word-level timestamps"""
@@ -71,7 +71,7 @@ Look for:
 - Really Funny moments
 - Big life updates
 
-Return ONLY a JSON array like this:
+Return ONLY a JSON array like this. Do NOT include backticks (`):
 [
   {{
     "segment_start_id": 2,
@@ -102,7 +102,8 @@ Return ONLY a JSON array like this:
             
             # Print the raw LLM output for debugging
             print("\n--- Raw OpenRouter LLM Output ---")
-            print(response.choices[0].message.content)
+            content = response.choices[0].message.content.strip()
+            print(content)
             print("--- End of LLM Output ---\n")
             
             # Parse the JSON response
