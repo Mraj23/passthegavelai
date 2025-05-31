@@ -79,7 +79,16 @@ async def process_discord_messages_and_shutdown(client):
                 if message.author.bot:
                     continue
 
-                author_name = message.author.name
+                USER_MAP = {
+                    "lennyhuang": "Len",
+                    "pushinppalways": "Fee",
+                    "rajmehta23": "Raj",
+                    "browncrown": "Raj",
+                }
+
+                author_name = USER_MAP[message.author.name]
+
+                print(author_name)
 
                 for i, attachment in enumerate(message.attachments):
                     if attachment.content_type and "audio" in attachment.content_type:
