@@ -49,7 +49,6 @@ async def process_discord_messages_and_shutdown(client):
     This is the core task that the bot will perform once it's ready.
     It fetches messages, downloads audio, saves data, and then shuts down the client.
     """
-    env = load_env_vars() # Load env vars again, or pass them in from main
     voice_folder, voice_metadata_file = create_folders() # Ensure folders exist
 
     print("Starting message processing task...")
@@ -74,16 +73,15 @@ async def process_discord_messages_and_shutdown(client):
                     continue
 
                 author_name = message.author.name
-                prettier_name = USERNAME_MAP.get(author_name, author_name)
 
                 for attachment in message.attachments:
                     if attachment.content_type and "audio" in attachment.content_type:
                         print(f"Voice message found: {attachment.filename} from {author_name}")
                         filename = await download_voice_attachment(attachment, session, voice_folder)
                         if filename:
-                            if prettier_name not in user_audio_map:
-                                user_audio_map[prettier_name] = []
-                            user_audio_map[prettier_name].append(filename)
+                            if author_name not in user_audio_map:
+                                user_audio_map[author_name] = []
+                            user_audio_map[author_name].append(filename)
 
             output_list = []
             for name, files in user_audio_map.items():
@@ -109,7 +107,6 @@ async def process_discord_messages_and_shutdown(client):
 
 # No longer an async function
 def get_messages():
-    env = load_env_vars()
     create_folders() # Create folders once at the start
 
     client = get_discord_client()
