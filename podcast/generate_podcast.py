@@ -9,7 +9,6 @@ import io
 import json
 from pydub import AudioSegment
 import requests
-import datetime
 
 
 class SimplePodcastGenerator:
@@ -201,8 +200,7 @@ class SimplePodcastGenerator:
 
 def generate_podcast_from_data():
     input_file = "data/transcript.json"
-    today = datetime.now().strftime("%Y-%m-%d")
-    output_file = f"data/podcast_{today}.mp3"
+    output_file = "data/podcast.mp3"
 
     api_key = os.getenv("ELEVENLABS_API_KEY")
     if not api_key:
