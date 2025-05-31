@@ -45,6 +45,8 @@ async def download_voice_attachment(attachment, session, download_folder):
                 with open(file_path, "wb") as f:
                     f.write(await resp.read())
                 return attachment.filename
+            else:
+                print(f"Failed to download {attachment.filename}: HTTP status {resp.status}")
     except Exception as e:
         print(f"Error downloading {attachment.filename}: {e}")
     return None
@@ -56,31 +58,29 @@ async def fetch_recent_messages(channel, time_delta):
         recent_messages.append(message)
     return recent_messages
 
-async def get_messages():
+# This function will now be executed directly by the bot's event loop
+async def process_discord_messages_and_shutdown(client):
     """
-    Downloads voice message audio files from the specified Discord channel
-    into ptg_discord_data/voice_messages and creates ptg_discord_data.json
-    with structured output mapping prettier names to audio files.
-    Returns:
-        success (bool): True if completed successfully, False otherwise.
+    This is the core task that the bot will perform once it's ready.
+    It fetches messages, downloads audio, saves data, and then shuts down the client.
     """
-    env = load_env_vars()
-    create_folders()
-    client = get_discord_client()
-    session = aiohttp.ClientSession() # Create aiohttp session
+    env = load_env_vars() # Load env vars again, or pass them in from main
+    create_folders() # Ensure folders exist
 
-    # Data structure to hold mapping of prettier names to audio files
-    user_audio_map = {}
+    print("Starting message processing task...")
 
-    @client.event
-    async def on_ready():
+    # Create aiohttp session within this task's scope for clean closure
+    async with aiohttp.ClientSession() as session:
         try:
             channel = client.get_channel(env["UPLOAD_CHANNEL_ID"])
             if not channel:
                 print(f"Could not find channel with ID {env['UPLOAD_CHANNEL_ID']}")
-                return
+                # If channel not found, still close gracefully
+                await client.close()
+                client.loop.stop()
+                return False
 
-            # Fetch messages from past 1 day (can be adjusted)
+            user_audio_map = {}
             time_delta = timedelta(days=1)
             recent_messages = await fetch_recent_messages(channel, time_delta)
 
@@ -88,7 +88,7 @@ async def get_messages():
                 if message.author.bot:
                     continue
 
-                author_name = str(message.author)
+                author_name = message.author.name
                 prettier_name = USERNAME_MAP.get(author_name, author_name)
 
                 for attachment in message.attachments:
@@ -100,7 +100,6 @@ async def get_messages():
                                 user_audio_map[prettier_name] = []
                             user_audio_map[prettier_name].append(filename)
 
-            # Prepare JSON output
             output_list = []
             for name, files in user_audio_map.items():
                 output_list.append({
@@ -112,18 +111,49 @@ async def get_messages():
                 json.dump(output_list, f, indent=4)
             print(f"Data saved to {JSON_FILE}")
 
+            return True # Indicate success
+
         except Exception as e:
-            print(f"Error during on_ready: {e}")
+            print(f"Error during bot task: {e}")
+            return False # Indicate failure
+        finally:
+            # Ensure the client is closed and the loop stopped after the task finishes
+            print("Processing complete. Shutting down Discord client...")
+            await client.close()
+            client.loop.stop() # This will stop the client.run() call
 
+# No longer an async function
+def main():
+    env = load_env_vars()
+    create_folders() # Create folders once at the start
+
+    client = get_discord_client()
+
+    @client.event
+    async def on_ready():
+        print(f"Logged in as {client.user} (ID: {client.user.id})")
+        # Schedule the main processing task to run in the background
+        # This allows on_ready to return, and the bot to fully start before
+        # we try to close it.
+        client.loop.create_task(process_discord_messages_and_shutdown(client))
+
+    print("Attempting to start Discord client...")
     try:
-        await client.start(env["DISCORD_TOKEN"])
+        # client.run() is a blocking call that starts and manages the event loop.
+        # It will exit when client.loop.stop() is called from within on_ready.
+        client.run(env["DISCORD_TOKEN"])
+        print("Discord client run loop has stopped.")
+        # At this point, the task has completed and the client has closed.
         return True
-    except Exception as e:
-        print(f"Error during client.start: {e}")
+    except discord.LoginFailure:
+        print("Failed to log in. Please check your DISCORD_TOKEN.")
         return False
-    finally:
-        await session.close() # Close the aiohttp session
-        await client.close()
+    except Exception as e:
+        print(f"Error during client.run: {e}")
+        return False
 
-if __name__ == "__main__":
-    asyncio.run(get_messages())  # Run the async main function
+# if __name__ == "__main__":
+#     if main():
+#         print("Script finished successfully.")
+#     else:
+#         print("Script finished with errors.")
