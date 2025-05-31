@@ -14,13 +14,12 @@ from get_directory_tree import get_directory_tree
 
 load_dotenv()
 
-DOWNLOAD_FOLDER = os.path.join('../', os.getenv("DOWNLOAD_FOLDER"))
-AUDIO_DIR =  os.path.join(DOWNLOAD_FOLDER, 'voice_messages')
+DOWNLOAD_FOLDER = os.path.join("../", os.getenv("DOWNLOAD_FOLDER"))
+AUDIO_DIR = os.path.join(DOWNLOAD_FOLDER, "voice_messages")
 COMBINED_DIR = os.path.join(AUDIO_DIR, "combined")
-METADATA_DIR = os.path.join(DOWNLOAD_FOLDER, 'ptg_discord_data.json')
+METADATA_DIR = os.path.join(DOWNLOAD_FOLDER, "ptg_discord_data.json")
 # Ensure combined directory exists
 os.makedirs(COMBINED_DIR, exist_ok=True)
-
 
 
 class ScriptSegment(BaseModel):
@@ -28,16 +27,13 @@ class ScriptSegment(BaseModel):
     text: str
 
 
-
 class GenerateResponse(BaseModel):
     script: List[ScriptSegment]
-
 
 
 class Metadata(BaseModel):
     name: str
     audio_files: List[str]
-
 
 
 def get_system_prompt() -> str:
@@ -47,7 +43,6 @@ def get_system_prompt() -> str:
     except FileNotFoundError:
         print("prompt.txt file not found. Please add your system prompt to prompt.txt.")
         sys.exit(1)
-
 
 
 def transcribe_audio(audio_path: str) -> str:
@@ -61,12 +56,10 @@ def transcribe_audio(audio_path: str) -> str:
         return ""
 
 
-
 def get_metadata() -> List[Metadata]:
     with open(METADATA_DIR, "r", encoding="utf-8") as f:
         metadata = json.load(f)
         return [Metadata(**data) for data in metadata]
-
 
 
 def concat_audio_files(audio_files: List[str], output_path: str):
@@ -76,7 +69,6 @@ def concat_audio_files(audio_files: List[str], output_path: str):
         audio = AudioSegment.from_file(file)
         combined += audio
     combined.export(output_path, format="wav")
-
 
 
 async def generate_script():
@@ -123,11 +115,9 @@ async def generate_script():
         base_url="https://openrouter.ai/api/v1",
         api_key=router_api_key,
     )
-    user_prompt = json.dumps({
-        "transcripts": transcripts,
-        "snippets_tree": snippets_tree
-    })
-
+    user_prompt = json.dumps(
+        {"transcripts": transcripts, "snippets_tree": snippets_tree}
+    )
 
     try:
         response = await client.chat.completions.create(
@@ -159,7 +149,6 @@ async def generate_script():
     except Exception as e:
         print(f"OpenRouter API error: {str(e)}")
         sys.exit(1)
-
 
 
 if __name__ == "__main__":

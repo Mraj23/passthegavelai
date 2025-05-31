@@ -15,7 +15,6 @@ import re
 import asyncio
 
 
-
 class AudioSnippetExtractor:
     def __init__(self, router_api_key=None):
         print("Loading Whisper model...")
@@ -24,22 +23,15 @@ class AudioSnippetExtractor:
             base_url="https://openrouter.ai/api/v1",
             api_key=router_api_key,
         )
-            base_url="https://openrouter.ai/api/v1",
-            api_key=router_api_key,
-        )
         self.model = os.getenv("OPENROUTER_MODEL")
-
 
     def transcribe_with_timestamps(self, audio_file):
         """Step 1: Get transcript with word-level timestamps"""
         print(f"Transcribing: {audio_file}")
 
-
         result = self.whisper_model.transcribe(
             audio_file, word_timestamps=True, fp16=False
-            audio_file, word_timestamps=True, fp16=False
         )
-
 
         # Print all segments for debugging
         print("\n--- Whisper Segments ---")
@@ -54,12 +46,10 @@ class AudioSnippetExtractor:
 
         return {"full_text": result["text"], "segments": result["segments"]}
 
-
         return {"full_text": result["text"], "segments": result["segments"]}
 
     async def find_interesting_parts(self, transcript):
         """Step 2: Ask LLM to identify interesting segments"""
-
 
         # Create segments with timestamps for the LLM
         segments_for_llm = []
@@ -114,11 +104,9 @@ Return ONLY a JSON array like this. Do NOT include backticks (`):
 ]
 """
 
-
         try:
             if not self.openrouter_client:
                 raise Exception("No OpenRouter client available")
-
 
             response = await self.openrouter_client.chat.completions.create(
                 model=self.model,
@@ -127,18 +115,15 @@ Return ONLY a JSON array like this. Do NOT include backticks (`):
                 temperature=0.3,
             )
 
-
             # Print the raw LLM output for debugging
             print("\n--- Raw OpenRouter LLM Output ---")
             content = response.choices[0].message.content.strip()
             print(content)
             print("--- End of LLM Output ---\n")
 
-
             # Parse the JSON response
             interesting_parts = json.loads(response.choices[0].message.content)
             return interesting_parts
-
 
         except Exception as e:
             print(f"Error with LLM: {e}")
@@ -163,7 +148,6 @@ Return ONLY a JSON array like this. Do NOT include backticks (`):
                 )
             return fallback
 
-
     def sanitize_filename(self, text):
         # Lowercase, replace spaces with underscores, remove non-alphanumeric/underscore
         return re.sub(r"[^a-zA-Z0-9_]", "", text.replace(" ", "_")).lower()
@@ -172,33 +156,24 @@ Return ONLY a JSON array like this. Do NOT include backticks (`):
     def extract_audio_snippets(
         self, audio_file, interesting_parts, output_folder="snippets"
     ):
-    def extract_audio_snippets(
-        self, audio_file, interesting_parts, output_folder="snippets"
-    ):
         """Step 3: Extract the actual audio clips"""
-
 
         # Create a subfolder for this audio file
         audio_base = os.path.splitext(os.path.basename(audio_file))[0]
         audio_output_folder = os.path.join(output_folder, audio_base)
         os.makedirs(audio_output_folder, exist_ok=True)
 
-
         # Load the audio file
         audio = AudioSegment.from_file(audio_file)
 
-
         snippets = []
-
 
         for i, part in enumerate(interesting_parts):
             start_ms = part["start"] * 1000  # Convert to milliseconds
             end_ms = part["end"] * 1000
 
-
             # Extract the snippet
             snippet = audio[start_ms:end_ms]
-
 
             # Sanitize reason for filename
             reason_safe = self.sanitize_filename(part["reason"])
@@ -222,7 +197,6 @@ Return ONLY a JSON array like this. Do NOT include backticks (`):
                 f"✅ Extracted: {filename} ({part['end'] - part['start']:.1f}s) - {part['reason']}"
             )
 
-
             snippets.append(
                 {
                     "filename": filename,
@@ -240,27 +214,21 @@ Return ONLY a JSON array like this. Do NOT include backticks (`):
 
         return snippets
 
-
     async def process_audio_file(self, audio_file, output_folder="snippets"):
         """Main function: Process one audio file and extract interesting snippets"""
 
-
         print(f"\n🎵 Processing: {audio_file}")
-
 
         # Step 1: Transcribe
         transcript = self.transcribe_with_timestamps(audio_file)
-
 
         # Step 2: Find interesting parts
         print("🤖 Asking LLM to find interesting parts...")
         interesting_parts = await self.find_interesting_parts(transcript)
 
-
         print(f"📝 Found {len(interesting_parts)} interesting segments:")
         for part in interesting_parts:
             print(f"  - {part['start']:.1f}s-{part['end']:.1f}s: {part['reason']}")
-
 
         # Step 3: Extract audio clips
         print("✂️  Extracting audio snippets...")
@@ -294,10 +262,8 @@ Return ONLY a JSON array like this. Do NOT include backticks (`):
         return snippets
 
 
-
 def main():
     """Simple command line interface"""
-
 
     if len(sys.argv) < 2:
         print("🎵 Audio Snippet Extractor")
@@ -305,10 +271,8 @@ def main():
         print("\nExample: python create_snippets.py mike_vacation.wav snippets/")
         return
 
-
     audio_file = sys.argv[1]
     output_folder = sys.argv[2] if len(sys.argv) > 2 else "snippets"
-
 
     # Get OpenRouter API key
     router_api_key = os.getenv("OPENROUTER_API_KEY")
@@ -322,15 +286,12 @@ def main():
             api_key=router_api_key,
         )
 
-
     # Process the audio file
     extractor = AudioSnippetExtractor(openrouter_client)
     asyncio.run(extractor.process_audio_file(audio_file, output_folder))
 
 
-
 if __name__ == "__main__":
     import sys
-
 
     main()
