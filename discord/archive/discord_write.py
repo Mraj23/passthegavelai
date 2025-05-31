@@ -1,5 +1,4 @@
 import discord
-import os
 from config import config
 
 DISCORD_TOKEN = config.DISCORD_TOKEN

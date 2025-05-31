@@ -1,7 +1,5 @@
 import discord
-import os
 from config import config
-import asyncio
 
 intents = discord.Intents.default()
 intents.messages = True

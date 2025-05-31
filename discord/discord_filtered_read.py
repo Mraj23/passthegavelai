@@ -3,7 +3,6 @@ import aiohttp
 import os
 import json
 from datetime import datetime, timedelta
-import asyncio
 from config import config
 
 

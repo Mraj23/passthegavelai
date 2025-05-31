@@ -1,4 +1,3 @@
-import sys
 from discord.discord_filtered_read import get_messages
 from discord.discord_write_attachment import send_attachment
 
