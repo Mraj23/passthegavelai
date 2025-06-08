@@ -2,6 +2,16 @@
 
 Len, Raj, Phi project for CMU T&E Home-cooked Apps AI Hackathon
 
+# About 
+
+Pass The Gavel is a project we built to help friend groups or families stay connected by automatically turning their shared voice messages into short, entertaining podcast episodes.
+
+How it works:
+- Collects Voice Messages: The system connects to a Discord server, downloads recent voice messages from users, and organizes them by sender.
+- Generates Highlights & Transcript: Using speech-to-text (Whisper) and an LLM (via OpenRouter), it transcribes the audio, identifies the most interesting or funny moments, and generates a podcast script. The script is structured as a conversation between two hosts, with audio snippets from the friends’ messages inserted at relevant points.
+- Creates a Podcast: The script and audio snippets are combined using text-to-speech (via ElevenLabs) and audio processing to produce a seamless podcast episode.
+- Sends Podcast Back to Discord: The finished podcast audio file is automatically sent back to a Discord channel for everyone to listen to.
+
 # Setup
 
 ## Python Commands
